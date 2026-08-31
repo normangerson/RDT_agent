@@ -85,7 +85,7 @@ if prompt := st.chat_input(
 
                     # Llamada al modelo Gemini
                     response = client.models.generate_content(
-                        model = "gemini-2.5-flash",
+                        model = "gemini-3.6-flash",
                         contents=prompt,
                         config=genai.types.GenerateContentConfig(
                             system_instruction=system_instruction,
