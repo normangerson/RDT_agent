@@ -13,7 +13,7 @@ st.set_page_config(
 st.title("🛡️ Agente Inteligente de Turnos - Centro de Control")
 st.markdown(
     "Sistema autónomo para la planificación, optimización y gestión de turnos"
-    " operativos 24/7."
+    " operativos 24/7 con matriz de multi-roles."
 )
 
 # Inicializar cliente de Gemini si hay API Key o Secrets
@@ -25,15 +25,18 @@ try:
 except Exception:
   pass
 
-# --- GESTIÓN DE OPERADORES EN SESSION STATE ---
+# --- GESTIÓN DE OPERADORES Y MULTI-ROLES EN SESSION STATE ---
 if "operadores" not in st.session_state:
   st.session_state.operadores = [
-      {"Nombre": "Carlos Pérez", "Rol": "Operador Senior", "Turno Preferido": "Mañana"},
-      {"Nombre": "Ana Gómez", "Rol": "Operador Senior", "Turno Preferido": "Tarde"},
-      {"Nombre": "Luis Torres", "Rol": "Operador Junior", "Turno Preferido": "Noche"},
-      {"Nombre": "María Ruiz", "Rol": "Operador Junior", "Turno Preferido": "Rotativo"},
-      {"Nombre": "Jorge Díaz", "Rol": "Operador Senior", "Turno Preferido": "Mañana"},
-      {"Nombre": "Sofía Castro", "Rol": "Operador Junior", "Turno Preferido": "Tarde"},
+      {
+          "Nombre": "Carlos Pérez",
+          "Roles Habilitados": ["C", "ET", "EF", "A"],
+      },
+      {"Nombre": "Ana Gómez", "Roles Habilitados": ["ET", "EF", "A"]},
+      {"Nombre": "Luis Torres", "Roles Habilitados": ["EF", "A"]},
+      {"Nombre": "María Ruiz", "Roles Habilitados": ["A"]},
+      {"Nombre": "Jorge Díaz", "Roles Habilitados": ["C", "ET"]},
+      {"Nombre": "Sofía Castro", "Roles Habilitados": ["EF", "ET", "A"]},
   ]
 
 # Sidebar para configuración de credenciales, parámetros y restricciones
@@ -59,15 +62,34 @@ with st.sidebar:
   )
 
   st.markdown("---")
-  st.subheader("👥 Gestión de Operadores")
+  st.subheader("👥 Gestión de Operadores y Roles")
   with st.form("form_nuevo_operador", clear_on_submit=True):
     nuevo_nombre = st.text_input("Nombre del Operador")
-    nuevo_rol = st.selectbox("Nivel / Rol", ["Operador Senior", "Operador Junior", "Supervisor"])
+    st.markdown("Roles que puede cumplir:")
+    rol_c = st.checkbox("Coordinador (C)")
+    rol_et = st.checkbox("Espec. Tensión (ET)")
+    rol_ef = st.checkbox("Espec. Frecuencia (EF)")
+    rol_a = st.checkbox("Analista (A)", value=True)
     submit_op = st.form_submit_button("Agregar Operador")
 
     if submit_op and nuevo_nombre:
+      roles_seleccionados = []
+      if rol_c:
+        roles_seleccionados.append("C")
+      if rol_et:
+        roles_seleccionados.append("ET")
+      if rol_ef:
+        roles_seleccionados.append("EF")
+      if rol_a:
+        roles_seleccionados.append("A")
+
       st.session_state.operadores.append(
-          {"Nombre": nuevo_nombre, "Rol": nuevo_rol, "Turno Preferido": "Rotativo"}
+          {
+              "Nombre": nuevo_nombre,
+              "Roles Habilitados": (
+                  roles_seleccionados if roles_seleccionados else ["A"]
+              ),
+          }
       )
       st.success(f"¡{nuevo_nombre} agregado con éxito!")
       st.rerun()
@@ -91,13 +113,26 @@ num_operadores = len(st.session_state.operadores)
 tab_chat, tab_equipo = st.tabs(["💬 Agente de Turnos", "📋 Plantilla de Operadores"])
 
 with tab_equipo:
-  st.subheader("Personal Registrado en el Centro de Control")
-  df_ops = pd.DataFrame(st.session_state.operadores)
+  st.subheader("Matriz de Personal y Roles Habilitados en el Centro de Control")
+  st.markdown(
+      "**Leyenda de Roles:** **C** = Coordinador | **ET** = Especialista Tensión"
+      " | **EF** = Especialista Frecuencia | **A** = Analista"
+  )
+
+  # Preparar dataframe formateando la lista de roles a texto legible
+  df_display = []
+  for op in st.session_state.operadores:
+    df_display.append({
+        "Nombre": op["Nombre"],
+        "Roles Habilitados": ", ".join(op["Roles Habilitados"]),
+    })
+  df_ops = pd.DataFrame(df_display)
   st.dataframe(df_ops, use_container_width=True)
 
   # Opción para eliminar operador
   op_a_eliminar = st.selectbox(
-      "Seleccionar operador para eliminar", [op["Nombre"] for op in st.session_state.operadores]
+      "Seleccionar operador para eliminar",
+      [op["Nombre"] for op in st.session_state.operadores],
   )
   if st.button("Eliminar Operador Seleccionado"):
     st.session_state.operadores = [
@@ -116,10 +151,10 @@ with tab_chat:
         {
             "role": "assistant",
             "content": (
-                "¡Hola! Soy tu agente experto en gestión de turnos para el centro de control."
-                " Ya tengo cargada la plantilla de operadores y restricciones."
-                " ¿Qué deseas hacer hoy? (Ej: *'Generar el rol para la próxima"
-                " semana'* o *'Juan reportó descanso médico, ¿quién lo cubre?'*)"
+                "¡Hola! Soy tu agente experto en gestión de turnos."
+                " Ya tengo registrada la matriz de multi-roles de los"
+                " operadores (C, ET, EF, A) y las restricciones."
+                " ¿Qué deseas planificar hoy?"
             ),
         }
     ]
@@ -131,26 +166,34 @@ with tab_chat:
   # Entrada del usuario
   if prompt := st.chat_input("Escribe tu solicitud para el agente de turnos..."):
     if not client:
-      st.error("Por favor, ingresa tu API Key de Gemini en la barra lateral o en los Secrets.")
+      st.error("Por favor, ingresa tu API Key de Gemini en la barra lateral.")
     else:
       st.session_state.messages.append({"role": "user", "content": prompt})
       with st.chat_message("user"):
         st.markdown(prompt)
 
       with st.chat_message("assistant"):
-        with st.spinner("El agente está analizando las restricciones y turnos..."):
+        with st.spinner("El agente está analizando la matriz de roles y turnos..."):
           try:
-            # Lista estructurada de operadores para el prompt
-            lista_nombres_ops = ", ".join(
-                [f"{op['Nombre']} ({op['Rol']})" for op in st.session_state.operadores]
-            )
+            # Lista estructurada de operadores y sus competencias para el prompt
+            lista_nombres_ops = "\n".join([
+                f"- {op['Nombre']}: Habilitado para los roles"
+                f" {op['Roles Habilitados']}"
+                for op in st.session_state.operadores
+            ])
 
-            # Instrucción de sistema avanzada con operadores y restricciones integradas
+            # Instrucción de sistema avanzada con multi-roles integrados
             system_instruction = f"""
                         Eres un agente experto en gestión de recursos humanos y optimización de turnos para un Centro de Control 24/7.
                         
-                        PLANTILLA DE OPERADORES ACTIVOS ({num_operadores} en total):
+                        MATRIZ DE OPERADORES Y ROLES HABILITADOS:
                         {lista_nombres_ops}
+                        
+                        DEFINICIÓN DE PUESTOS EN EL CENTRO DE CONTROL:
+                        - C: Coordinador
+                        - ET: Especialista Tensión
+                        - EF: Especialista Frecuencia
+                        - A: Analista
                         
                         REGLAS Y RESTRICCIONES OBLIGATORIAS:
                         1. Esquema de rotación: {dias_ciclo}.
@@ -158,7 +201,10 @@ with tab_chat:
                         3. Límite máximo de turnos nocturnos consecutivos: {max_nocturnos}.
                         4. Novedades activas, bajas o vacaciones: {novedades_input if novedades_input else "Ninguna"}.
                         
-                        Tu objetivo es coordinar turnos justos utilizando exclusivamente los nombres de los operadores listados, cumplir normativas de descanso, resolver imprevistos y proponer tablas claras en formato Markdown.
+                        INSTRUCCIONES CLAVE:
+                        - Al asignar puestos en los turnos, DEBES RESPETAR ESTRICTAMENTE la matriz de roles habilitados de cada operador (por ejemplo, nunca asignes un rol para el que un operador no esté habilitado).
+                        - Distribuye las cargas de manera justa y equitativa.
+                        - Presenta las propuestas siempre en una tabla clara en formato Markdown indicando el puesto asignado (C, ET, EF, A) por cada día u hora.
                         """
 
             # Llamada al modelo Gemini
@@ -185,18 +231,17 @@ with tab_chat:
 
 # Sección de visualización de ejemplo de tabla de turnos
 st.markdown("---")
-st.subheader("📊 Vista Previa del Rol Actual")
-# Generar una tabla simulada basada en los operadores reales registrados
+st.subheader("📊 Vista Previa de Asignación por Competencias")
 nombres_actuales = [op["Nombre"] for op in st.session_state.operadores]
 data = {
     "Operador": nombres_actuales,
-    "Lunes": ["Mañana", "Mañana", "Tarde", "Noche", "Libre", "Libre", "Tarde", "Noche"][:num_operadores],
-    "Martes": ["Mañana", "Mañana", "Tarde", "Noche", "Libre", "Libre", "Tarde", "Noche"][:num_operadores],
-    "Miércoles": ["Libre", "Mañana", "Tarde", "Noche", "Libre", "Libre", "Tarde", "Noche"][:num_operadores],
-    "Jueves": ["Libre", "Libre", "Tarde", "Noche", "Mañana", "Mañana", "Libre", "Libre"][:num_operadores],
-    "Viernes": ["Tarde", "Tarde", "Libre", "Libre", "Mañana", "Mañana", "Noche", "Noche"][:num_operadores],
-    "Sábado": ["Noche", "Noche", "Libre", "Libre", "Tarde", "Tarde", "Mañana", "Mañana"][:num_operadores],
-    "Domingo": ["Noche", "Libre", "Libre", "Libre", "Tarde", "Tarde", "Mañana", "Mañana"][:num_operadores],
+    "Lunes": ["C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "A (Analista)", "Libre", "Libre"][:num_operadores],
+    "Martes": ["C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "A (Analista)", "Libre", "Libre"][:num_operadores],
+    "Miércoles": ["Libre", "C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "Libre", "Libre"][:num_operadores],
+    "Jueves": ["Libre", "Libre", "C (Coordinador)", "ET (Esp. Tensión)", "A (Analista)", "A (Analista)"][:num_operadores],
+    "Viernes": ["EF (Esp. Frecuencia)", "EF (Esp. Frecuencia)", "Libre", "Libre", "C (Coordinador)", "ET (Esp. Tensión)"][:num_operadores],
+    "Sábado": ["Noche (ET)", "Noche (EF)", "Libre", "Libre", "Tarde (A)", "Tarde (A)"][:num_operadores],
+    "Domingo": ["Libre", "Libre", "Noche (ET)", "Noche (EF)", "Tarde (A)", "Tarde (A)"][:num_operadores],
 }
 df = pd.DataFrame(data)
 st.dataframe(df, use_container_width=True)
