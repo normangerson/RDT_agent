@@ -14,7 +14,8 @@ st.set_page_config(
 st.title("🛡️ Agente Inteligente de Turnos - Centro de Control")
 st.markdown(
     "Sistema autónomo para la planificación, optimización y gestión de turnos"
-    " operativos 24/7 con matriz de multi-roles y persistencia."
+    " operativos 24/7 con matriz de multi-roles, ordenamiento y régimen de 5"
+    " semanas."
 )
 
 # Archivo local para guardar los operadores de forma permanente
@@ -28,14 +29,38 @@ def cargar_operadores():
         return json.load(f)
     except Exception:
       pass
-  # Valores por defecto si el archivo no existe
+  # Valores por defecto con semana de ciclo inicial (1 a 5)
   return [
-      {"Nombre": "Carlos Pérez", "Roles Habilitados": ["C", "ET", "EF", "A"]},
-      {"Nombre": "Ana Gómez", "Roles Habilitados": ["ET", "EF", "A"]},
-      {"Nombre": "Luis Torres", "Roles Habilitados": ["EF", "A"]},
-      {"Nombre": "María Ruiz", "Roles Habilitados": ["A"]},
-      {"Nombre": "Jorge Díaz", "Roles Habilitados": ["C", "ET"]},
-      {"Nombre": "Sofía Castro", "Roles Habilitados": ["EF", "ET", "A"]},
+      {
+          "Nombre": "Carlos Pérez",
+          "Roles Habilitados": ["C", "ET", "EF", "A"],
+          "Semana Ciclo": 1,
+      },
+      {
+          "Nombre": "Ana Gómez",
+          "Roles Habilitados": ["ET", "EF", "A"],
+          "Semana Ciclo": 2,
+      },
+      {
+          "Nombre": "Luis Torres",
+          "Roles Habilitados": ["EF", "A"],
+          "Semana Ciclo": 3,
+      },
+      {
+          "Nombre": "María Ruiz",
+          "Roles Habilitados": ["A"],
+          "Semana Ciclo": 4,
+      },
+      {
+          "Nombre": "Jorge Díaz",
+          "Roles Habilitados": ["C", "ET"],
+          "Semana Ciclo": 5,
+      },
+      {
+          "Nombre": "Sofía Castro",
+          "Roles Habilitados": ["EF", "ET", "A"],
+          "Semana Ciclo": 1,
+      },
   ]
 
 
@@ -70,14 +95,15 @@ with st.sidebar:
       client = genai.Client(api_key=api_key_input)
 
   st.markdown("---")
-  st.subheader("📋 Parámetros del Rol")
-  dias_ciclo = st.selectbox(
-      "Esquema de Rotación", ["Lunes a Viernes (5x2)", "Turnos 24/7 (4x4)"]
-  )
-  turno_seleccionado = st.selectbox(
-      "Modo de Operación",
-      ["Generar Nuevo Rol", "Simular Imprevisto / Baja", "Consultar Reglas"],
-  )
+  st.subheader("📋 Parámetros del Régimen 24/7")
+  st.markdown("""
+        **Esquema de las 5 Semanas del Ciclo:**
+        - **Semana 1 (OI):** Oficina (L-V), T2 (Sáb), Descanso (Dom).
+        - **Semana 2 (T2):** Tarde (L, M, Mi, V), T1 (Jue), T3 (Sáb, Dom).
+        - **Semana 3 (T3):** Noche (L-J), Descanso (Vie), T2 (Sáb).
+        - **Semana 4 (T1):** Madrugada (L-Mi), T2 (Jue), Madrugada (V-Dom).
+        - **Semana 5 (D):** Descanso toda la semana (L-Dom).
+        """)
 
   st.markdown("---")
   st.subheader("🛡️ Restricciones y Políticas")
@@ -98,43 +124,68 @@ num_operadores = len(st.session_state.operadores)
 tab_chat, tab_equipo = st.tabs(["💬 Agente de Turnos", "📋 Plantilla de Operadores"])
 
 with tab_equipo:
-  st.subheader("Matriz de Personal y Roles Habilitados en el Centro de Control")
+  st.subheader("Matriz de Personal y Régimen de 5 Semanas")
   st.markdown(
       "**Leyenda de Roles:** **C** = Coordinador | **ET** = Especialista Tensión"
-      " | **EF** = Especialista Frecuencia | **A** = Analista"
+      " | **EF** = Especialista Frecuencia | **A** = Analista  \n**Leyenda de"
+      " Turnos:** **OI** = Oficina | **T2** = 07:00-15:00 | **T3** ="
+      " 15:00-23:00 | **T1** = 23:00-07:00 | **D** = Descanso"
   )
 
-  # Dividir la pestaña en dos columnas: Izquierda la tabla, Derecha el formulario de registro
+  # Dividir la pestaña en dos columnas: Izquierda la tabla con controles de orden, Derecha el formulario
   col_tabla, col_form = st.columns([2, 1])
 
   with col_tabla:
-    st.markdown("### Personal Registrado")
-    df_display = []
-    for op in st.session_state.operadores:
-      df_display.append({
-          "Nombre": op["Nombre"],
-          "Roles Habilitados": ", ".join(op["Roles Habilitados"]),
-      })
-    df_ops = pd.DataFrame(df_display)
-    st.dataframe(df_ops, use_container_width=True, height=300)
+    st.markdown("### Personal Registrado y Orden de Prioridad")
 
-    # Opción para eliminar operador
-    op_a_eliminar = st.selectbox(
-        "Seleccionar operador para eliminar",
-        [op["Nombre"] for op in st.session_state.operadores],
-    )
-    if st.button("Eliminar Operador Seleccionado", type="primary"):
-      st.session_state.operadores = [
-          op for op in st.session_state.operadores if op["Nombre"] != op_a_eliminar
-      ]
-      guardar_operadores(st.session_state.operadores)
-      st.success(f"Operador {op_a_eliminar} eliminado y cambios guardados.")
-      st.rerun()
+    # Mostrar tabla interactiva con botones para mover arriba/abajo
+    for idx, op in enumerate(st.session_state.operadores):
+      c_info, c_up, c_down, c_del = st.columns([4, 1, 1, 1])
+      with c_info:
+        roles_str = ", ".join(op["Roles Habilitados"])
+        ciclo_val = op.get("Semana Ciclo", 1)
+        st.markdown(
+            f"**{idx+1}. {op['Nombre']}** — Roles: `[{roles_str}]` | Ciclo:"
+            f" **Semana {ciclo_val}**"
+        )
+      with c_up:
+        if idx > 0:
+          if st.button("⬆️", key=f"up_{idx}"):
+            (
+                st.session_state.operadores[idx],
+                st.session_state.operadores[idx - 1],
+            ) = (
+                st.session_state.operadores[idx - 1],
+                st.session_state.operadores[idx],
+            )
+            guardar_operadores(st.session_state.operadores)
+            st.rerun()
+      with c_down:
+        if idx < len(st.session_state.operadores) - 1:
+          if st.button("⬇️", key=f"down_{idx}"):
+            (
+                st.session_state.operadores[idx],
+                st.session_state.operadores[idx + 1],
+            ) = (
+                st.session_state.operadores[idx + 1],
+                st.session_state.operadores[idx],
+            )
+            guardar_operadores(st.session_state.operadores)
+            st.rerun()
+      with c_del:
+        if st.button("❌", key=f"del_{idx}"):
+          st.session_state.operadores.pop(idx)
+          guardar_operadores(st.session_state.operadores)
+          st.rerun()
 
   with col_form:
     st.markdown("### ➕ Agregar Operador")
     with st.form("form_nuevo_operador_principal", clear_on_submit=True):
       nuevo_nombre = st.text_input("Nombre del Operador")
+      semana_inicial = st.selectbox(
+          "Semana Inicial del Ciclo (1 al 5)", [1, 2, 3, 4, 5]
+      )
+
       st.markdown("Roles que puede cumplir:")
       rol_c = st.checkbox("Coordinador (C)")
       rol_et = st.checkbox("Espec. Tensión (ET)")
@@ -158,6 +209,7 @@ with tab_equipo:
             "Roles Habilitados": (
                 roles_seleccionados if roles_seleccionados else ["A"]
             ),
+            "Semana Ciclo": semana_inicial,
         }
         st.session_state.operadores.append(nuevo_registro)
         guardar_operadores(st.session_state.operadores)
@@ -174,10 +226,10 @@ with tab_chat:
         {
             "role": "assistant",
             "content": (
-                "¡Hola! Soy tu agente experto en gestión de turnos."
-                " Ya tengo registrada la matriz de multi-roles y la base de datos"
-                " persistente de operadores (C, ET, EF, A)."
-                " ¿Qué deseas planificar hoy?"
+                "¡Hola! Soy tu agente experto en gestión de turnos. Ya tengo"
+                " configurada la matriz de multi-roles, el orden de operadores y"
+                " el régimen natural de 5 semanas (OI, T2, T3, T1, D)."
+                " ¿Qué deseas planificar o consultar hoy?"
             ),
         }
     ]
@@ -196,38 +248,40 @@ with tab_chat:
         st.markdown(prompt)
 
       with st.chat_message("assistant"):
-        with st.spinner("El agente está analizando la matriz de roles y turnos..."):
+        with st.spinner("El agente está analizando el régimen de 5 semanas y turnos..."):
           try:
-            # Lista estructurada de operadores y sus competencias para el prompt
-            lista_nombres_ops = "\n".join([
-                f"- {op['Nombre']}: Habilitado para los roles"
-                f" {op['Roles Habilitados']}"
+            # Lista estructurada de operadores con su semana de ciclo y competencias
+            lista_nombres_ops = "\n_{idx+1}._ ".join([
+                f"- {op['Nombre']}: Semana de ciclo {op.get('Semana Ciclo', 1)},"
+                f" Roles habilitados: {op['Roles Habilitados']}"
                 for op in st.session_state.operadores
             ])
 
-            # Instrucción de sistema avanzada con multi-roles integrados
+            # Instrucción de sistema avanzada con el régimen de 5 semanas
             system_instruction = f"""
                         Eres un agente experto en gestión de recursos humanos y optimización de turnos para un Centro de Control 24/7.
                         
-                        MATRIZ DE OPERADORES Y ROLES HABILITADOS:
+                        PLANTILLA DE OPERADORES Y SU POSICIÓN EN EL CICLO DE 5 SEMANAS:
                         {lista_nombres_ops}
                         
-                        DEFINICIÓN DE PUESTOS EN EL CENTRO DE CONTROL:
+                        DEFINICIÓN DEL RÉGIMEN NATURAL DE 5 SEMANAS (Lunes a Domingo):
+                        - Semana 1 (OI - Oficina): L-V OI (Oficina / soporte), Sáb T2 (07-15h), Dom Descanso (D).
+                        - Semana 2 (T2 - Turno 2): L-Mi T2 (07-15h), Jue T1 (23-07h), V T2 (07-15h), Sáb-Dom T3 (15-23h).
+                        - Semana 3 (T3 - Turno 3): L-J T3 (15-23h), Vie Descanso (D), Sáb T2 (07-15h), Dom Descanso (D).
+                        - Semana 4 (T1 - Turno 1): L-Mi T1 (23-07h), Jue T2 (07-15h), V-Dom T1 (23-07h).
+                        - Semana 5 (D - Descanso): Descanso total toda la semana (L a D).
+                        
+                        DEFINICIÓN DE ROLES EN EL CENTRO DE CONTROL:
                         - C: Coordinador
                         - ET: Especialista Tensión
                         - EF: Especialista Frecuencia
                         - A: Analista
                         
-                        REGLAS Y RESTRICCIONES OBLIGATORIAS:
-                        1. Esquema de rotación: {dias_ciclo}.
-                        2. Descanso mínimo obligatorio entre turnos: {min_descanso} horas.
-                        3. Límite máximo de turnos nocturnos consecutivos: {max_nocturnos}.
-                        4. Novedades activas, bajas o vacaciones: {novedades_input if novedades_input else "Ninguna"}.
-                        
-                        INSTRUCCIONES CLAVE:
-                        - Al asignar puestos en los turnos, DEBES RESPETAR ESTRICTAMENTE la matriz de roles habilitados de cada operador.
-                        - Distribuye las cargas de manera justa y equitativa.
-                        - Presenta las propuestas siempre en una tabla clara en formato Markdown indicando el puesto asignado (C, ET, EF, A) por cada día.
+                        REGLAS OBLIGATORIAS:
+                        1. Respeta el orden de prioridad de los operadores tal como están listados.
+                        2. Asigna los turnos diarios (OI, T2, T3, T1, D) según la semana de ciclo en la que se encuentre cada operador.
+                        3. Novedades activas a considerar: {novedades_input if novedades_input else "Ninguna"}.
+                        4. Presenta siempre las respuestas y propuestas en tablas Markdown claras de Lunes a Domingo.
                         """
 
             # Llamada al modelo Gemini
@@ -252,19 +306,20 @@ with tab_chat:
                 {"role": "assistant", "content": error_msg}
             )
 
-# Sección de visualización de ejemplo de tabla de turnos
+# Sección de visualización de ejemplo de la tabla de 5 semanas del ciclo
 st.markdown("---")
-st.subheader("📊 Vista Previa de Asignación por Competencias")
+st.subheader("📊 Vista Previa del Régimen de Turnos (Semana a Semana)")
 nombres_actuales = [op["Nombre"] for op in st.session_state.operadores]
 data = {
     "Operador": nombres_actuales,
-    "Lunes": ["C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "A (Analista)", "Libre", "Libre"][:num_operadores],
-    "Martes": ["C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "A (Analista)", "Libre", "Libre"][:num_operadores],
-    "Miércoles": ["Libre", "C (Coordinador)", "ET (Esp. Tensión)", "EF (Esp. Frecuencia)", "Libre", "Libre"][:num_operadores],
-    "Jueves": ["Libre", "Libre", "C (Coordinador)", "ET (Esp. Tensión)", "A (Analista)", "A (Analista)"][:num_operadores],
-    "Viernes": ["EF (Esp. Frecuencia)", "EF (Esp. Frecuencia)", "Libre", "Libre", "C (Coordinador)", "ET (Esp. Tensión)"][:num_operadores],
-    "Sábado": ["Noche (ET)", "Noche (EF)", "Libre", "Libre", "Tarde (A)", "Tarde (A)"][:num_operadores],
-    "Domingo": ["Libre", "Libre", "Noche (ET)", "Noche (EF)", "Tarde (A)", "Tarde (A)"][:num_operadores],
+    "Ciclo Actual": [f"Semana {op.get('Semana Ciclo', 1)}" for op in st.session_state.operadores],
+    "Lunes": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
+    "Martes": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
+    "Miércoles": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
+    "Jueves": ["OI", "T1", "T3", "T2", "D", "OI"][:num_operadores],
+    "Viernes": ["OI", "T2", "D", "T1", "D", "OI"][:num_operadores],
+    "Sábado": ["T2", "T3", "T2", "T1", "D", "T2"][:num_operadores],
+    "Domingo": ["D", "T3", "D", "T1", "D", "D"][:num_operadores],
 }
 df = pd.DataFrame(data)
 st.dataframe(df, use_container_width=True)
