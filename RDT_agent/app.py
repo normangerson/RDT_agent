@@ -40,7 +40,7 @@ with st.sidebar:
 # Inicializar cliente de Gemini si hay API Key
 client = None
 if api_key_input:
-    client = genai.Client(api_key_input=api_key_input)
+    client = genai.Client(api_key=api_key_input)
 else:
     # Opcional: Buscar en variables de entorno del sistema operativo
     if os.environ.get("GEMINI_API_KEY"):
