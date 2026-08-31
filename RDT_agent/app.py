@@ -57,7 +57,7 @@ except Exception:
 if "operadores" not in st.session_state:
   st.session_state.operadores = cargar_operadores()
 
-# Sidebar para configuración de credenciales, parámetros y restricciones
+# Sidebar para configuración general y restricciones
 with st.sidebar:
   st.header("⚙️ Configuración")
   if not client:
@@ -78,39 +78,6 @@ with st.sidebar:
       "Modo de Operación",
       ["Generar Nuevo Rol", "Simular Imprevisto / Baja", "Consultar Reglas"],
   )
-
-  st.markdown("---")
-  st.subheader("👥 Gestión de Operadores y Roles")
-  with st.form("form_nuevo_operador", clear_on_submit=True):
-    nuevo_nombre = st.text_input("Nombre del Operador")
-    st.markdown("Roles que puede cumplir:")
-    rol_c = st.checkbox("Coordinador (C)")
-    rol_et = st.checkbox("Espec. Tensión (ET)")
-    rol_ef = st.checkbox("Espec. Frecuencia (EF)")
-    rol_a = st.checkbox("Analista (A)", value=True)
-    submit_op = st.form_submit_button("Agregar Operador")
-
-    if submit_op and nuevo_nombre:
-      roles_seleccionados = []
-      if rol_c:
-        roles_seleccionados.append("C")
-      if rol_et:
-        roles_seleccionados.append("ET")
-      if rol_ef:
-        roles_seleccionados.append("EF")
-      if rol_a:
-        roles_seleccionados.append("A")
-
-      nuevo_registro = {
-          "Nombre": nuevo_nombre,
-          "Roles Habilitados": (
-              roles_seleccionados if roles_seleccionados else ["A"]
-          ),
-      }
-      st.session_state.operadores.append(nuevo_registro)
-      guardar_operadores(st.session_state.operadores)
-      st.success(f"¡{nuevo_nombre} agregado y guardado con éxito!")
-      st.rerun()
 
   st.markdown("---")
   st.subheader("🛡️ Restricciones y Políticas")
@@ -137,28 +104,65 @@ with tab_equipo:
       " | **EF** = Especialista Frecuencia | **A** = Analista"
   )
 
-  # Preparar dataframe formateando la lista de roles a texto legible
-  df_display = []
-  for op in st.session_state.operadores:
-    df_display.append({
-        "Nombre": op["Nombre"],
-        "Roles Habilitados": ", ".join(op["Roles Habilitados"]),
-    })
-  df_ops = pd.DataFrame(df_display)
-  st.dataframe(df_ops, use_container_width=True)
+  # Dividir la pestaña en dos columnas: Izquierda la tabla, Derecha el formulario de registro
+  col_tabla, col_form = st.columns([2, 1])
 
-  # Opción para eliminar operador
-  op_a_eliminar = st.selectbox(
-      "Seleccionar operador para eliminar",
-      [op["Nombre"] for op in st.session_state.operadores],
-  )
-  if st.button("Eliminar Operador Seleccionado"):
-    st.session_state.operadores = [
-        op for op in st.session_state.operadores if op["Nombre"] != op_a_eliminar
-    ]
-    guardar_operadores(st.session_state.operadores)
-    st.success(f"Operador {op_a_eliminar} eliminado y cambios guardados.")
-    st.rerun()
+  with col_tabla:
+    st.markdown("### Personal Registrado")
+    df_display = []
+    for op in st.session_state.operadores:
+      df_display.append({
+          "Nombre": op["Nombre"],
+          "Roles Habilitados": ", ".join(op["Roles Habilitados"]),
+      })
+    df_ops = pd.DataFrame(df_display)
+    st.dataframe(df_ops, use_container_width=True, height=300)
+
+    # Opción para eliminar operador
+    op_a_eliminar = st.selectbox(
+        "Seleccionar operador para eliminar",
+        [op["Nombre"] for op in st.session_state.operadores],
+    )
+    if st.button("Eliminar Operador Seleccionado", type="primary"):
+      st.session_state.operadores = [
+          op for op in st.session_state.operadores if op["Nombre"] != op_a_eliminar
+      ]
+      guardar_operadores(st.session_state.operadores)
+      st.success(f"Operador {op_a_eliminar} eliminado y cambios guardados.")
+      st.rerun()
+
+  with col_form:
+    st.markdown("### ➕ Agregar Operador")
+    with st.form("form_nuevo_operador_principal", clear_on_submit=True):
+      nuevo_nombre = st.text_input("Nombre del Operador")
+      st.markdown("Roles que puede cumplir:")
+      rol_c = st.checkbox("Coordinador (C)")
+      rol_et = st.checkbox("Espec. Tensión (ET)")
+      rol_ef = st.checkbox("Espec. Frecuencia (EF)")
+      rol_a = st.checkbox("Analista (A)", value=True)
+      submit_op = st.form_submit_button("Guardar Nuevo Operador")
+
+      if submit_op and nuevo_nombre:
+        roles_seleccionados = []
+        if rol_c:
+          roles_seleccionados.append("C")
+        if rol_et:
+          roles_seleccionados.append("ET")
+        if rol_ef:
+          roles_seleccionados.append("EF")
+        if rol_a:
+          roles_seleccionados.append("A")
+
+        nuevo_registro = {
+            "Nombre": nuevo_nombre,
+            "Roles Habilitados": (
+                roles_seleccionados if roles_seleccionados else ["A"]
+            ),
+        }
+        st.session_state.operadores.append(nuevo_registro)
+        guardar_operadores(st.session_state.operadores)
+        st.success(f"¡{nuevo_nombre} agregado con éxito!")
+        st.rerun()
 
 with tab_chat:
   # Área principal del chat / agente
