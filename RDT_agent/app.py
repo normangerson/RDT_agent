@@ -14,8 +14,7 @@ st.set_page_config(
 st.title("🛡️ Agente Inteligente de Turnos - Centro de Control")
 st.markdown(
     "Sistema autónomo para la planificación, optimización y gestión de turnos"
-    " operativos 24/7 con matriz de multi-roles, ordenamiento y régimen de 5"
-    " semanas."
+    " operativos 24/7 con régimen natural de 5 semanas."
 )
 
 # Archivo local para guardar los operadores de forma permanente
@@ -29,7 +28,7 @@ def cargar_operadores():
         return json.load(f)
     except Exception:
       pass
-  # Valores por defecto con semana de ciclo inicial (1 a 5)
+  # Valores por defecto con su semana de ciclo asignada (1 al 5)
   return [
       {
           "Nombre": "Carlos Pérez",
@@ -95,17 +94,6 @@ with st.sidebar:
       client = genai.Client(api_key=api_key_input)
 
   st.markdown("---")
-  st.subheader("📋 Parámetros del Régimen 24/7")
-  st.markdown("""
-        **Esquema de las 5 Semanas del Ciclo:**
-        - **Semana 1 (OI):** Oficina (L-V), T2 (Sáb), Descanso (Dom).
-        - **Semana 2 (T2):** Tarde (L, M, Mi, V), T1 (Jue), T3 (Sáb, Dom).
-        - **Semana 3 (T3):** Noche (L-J), Descanso (Vie), T2 (Sáb).
-        - **Semana 4 (T1):** Madrugada (L-Mi), T2 (Jue), Madrugada (V-Dom).
-        - **Semana 5 (D):** Descanso toda la semana (L-Dom).
-        """)
-
-  st.markdown("---")
   st.subheader("🛡️ Restricciones y Políticas")
   min_descanso = st.slider("Descanso mínimo entre turnos (horas)", 8, 16, 12)
   max_nocturnos = st.number_input("Máximo turnos nocturnos consecutivos", 1, 5, 3)
@@ -121,24 +109,37 @@ with st.sidebar:
 num_operadores = len(st.session_state.operadores)
 
 # --- LAYOUT PRINCIPAL EN PESTAÑAS ---
-tab_chat, tab_equipo = st.tabs(["💬 Agente de Turnos", "📋 Plantilla de Operadores"])
+tab_chat, tab_equipo = st.tabs(["💬 Agente de Turnos", "📋 Plantilla y Régimen de 5 Semanas"])
 
 with tab_equipo:
-  st.subheader("Matriz de Personal y Régimen de 5 Semanas")
+  st.subheader("🗓️ Matriz del Régimen Natural de 5 Semanas (Lunes a Domingo)")
   st.markdown(
-      "**Leyenda de Roles:** **C** = Coordinador | **ET** = Especialista Tensión"
-      " | **EF** = Especialista Frecuencia | **A** = Analista  \n**Leyenda de"
-      " Turnos:** **OI** = Oficina | **T2** = 07:00-15:00 | **T3** ="
-      " 15:00-23:00 | **T1** = 23:00-07:00 | **D** = Descanso"
+      "**Leyenda de Turnos:** **OI** = Oficina (Soporte/Cubre turnos) | **T2** ="
+      " Turno 2 (07:00-15:00) | **T3** = Turno 3 (15:00-23:00) | **T1** = Turno"
+      " 1 (23:00-07:00) | **D** = Descanso"
   )
 
-  # Dividir la pestaña en dos columnas: Izquierda la tabla con controles de orden, Derecha el formulario
+  # Tabla de referencia visual del Régimen de 5 Semanas (como la imagen de referencia)
+  regimen_data = {
+      "Semana": ["1 (OI)", "2 (T2)", "3 (T3)", "4 (T1)", "5 (D)"],
+      "Lunes": ["OI", "T2", "T3", "T1", "D"],
+      "Martes": ["OI", "T2", "T3", "T1", "D"],
+      "Miércoles": ["OI", "T2", "T3", "T1", "D"],
+      "Jueves": ["OI", "T1", "T3", "T2", "D"],
+      "Viernes": ["OI", "T2", "D", "T1", "D"],
+      "Sábado": ["T2", "T3", "T2", "T1", "D"],
+      "Domingo": ["D", "T3", "D", "T1", "D"],
+  }
+  df_regimen = pd.DataFrame(regimen_data)
+  st.dataframe(df_regimen, use_container_width=True, hide_index=True)
+
+  st.markdown("---")
+
+  # Dividir la sección de personal en dos columnas: Tabla con orden y Formulario
   col_tabla, col_form = st.columns([2, 1])
 
   with col_tabla:
-    st.markdown("### Personal Registrado y Orden de Prioridad")
-
-    # Mostrar tabla interactiva con botones para mover arriba/abajo
+    st.markdown("### Personal Registrado y Posición en el Ciclo")
     for idx, op in enumerate(st.session_state.operadores):
       c_info, c_up, c_down, c_del = st.columns([4, 1, 1, 1])
       with c_info:
@@ -183,10 +184,10 @@ with tab_equipo:
     with st.form("form_nuevo_operador_principal", clear_on_submit=True):
       nuevo_nombre = st.text_input("Nombre del Operador")
       semana_inicial = st.selectbox(
-          "Semana Inicial del Ciclo (1 al 5)", [1, 2, 3, 4, 5]
+          "Semana Actual del Ciclo (1 al 5)", [1, 2, 3, 4, 5]
       )
 
-      st.markdown("Roles que puede cumplir:")
+      st.markdown("Roles habilitados:")
       rol_c = st.checkbox("Coordinador (C)")
       rol_et = st.checkbox("Espec. Tensión (ET)")
       rol_ef = st.checkbox("Espec. Frecuencia (EF)")
@@ -226,10 +227,10 @@ with tab_chat:
         {
             "role": "assistant",
             "content": (
-                "¡Hola! Soy tu agente experto en gestión de turnos. Ya tengo"
-                " configurada la matriz de multi-roles, el orden de operadores y"
-                " el régimen natural de 5 semanas (OI, T2, T3, T1, D)."
-                " ¿Qué deseas planificar o consultar hoy?"
+                "¡Hola! Soy tu agente experto en turnos. Ya tengo integrada la"
+                " tabla del régimen natural de 5 semanas (OI, T2, T3, T1, D) y"
+                " la lista de operadores con su respectiva semana de ciclo."
+                " ¿Qué deseas planificar o ajustar hoy?"
             ),
         }
     ]
@@ -248,40 +249,40 @@ with tab_chat:
         st.markdown(prompt)
 
       with st.chat_message("assistant"):
-        with st.spinner("El agente está analizando el régimen de 5 semanas y turnos..."):
+        with st.spinner("El agente está procesando el régimen y las solicitudes..."):
           try:
-            # Lista estructurada de operadores con su semana de ciclo y competencias
-            lista_nombres_ops = "\n_{idx+1}._ ".join([
-                f"- {op['Nombre']}: Semana de ciclo {op.get('Semana Ciclo', 1)},"
-                f" Roles habilitados: {op['Roles Habilitados']}"
+            # Lista estructurada de operadores y su ciclo
+            lista_nombres_ops = "\n".join([
+                f"- {op['Nombre']}: Se encuentra en la Semana Ciclo {op.get('Semana Ciclo', 1)}, Roles: {op['Roles Habilitados']}"
                 for op in st.session_state.operadores
             ])
 
-            # Instrucción de sistema avanzada con el régimen de 5 semanas
+            # Instrucción de sistema con el régimen estructurado
             system_instruction = f"""
                         Eres un agente experto en gestión de recursos humanos y optimización de turnos para un Centro de Control 24/7.
                         
-                        PLANTILLA DE OPERADORES Y SU POSICIÓN EN EL CICLO DE 5 SEMANAS:
+                        PLANTILLA Y CICLO DE OPERADORES:
                         {lista_nombres_ops}
                         
-                        DEFINICIÓN DEL RÉGIMEN NATURAL DE 5 SEMANAS (Lunes a Domingo):
-                        - Semana 1 (OI - Oficina): L-V OI (Oficina / soporte), Sáb T2 (07-15h), Dom Descanso (D).
-                        - Semana 2 (T2 - Turno 2): L-Mi T2 (07-15h), Jue T1 (23-07h), V T2 (07-15h), Sáb-Dom T3 (15-23h).
-                        - Semana 3 (T3 - Turno 3): L-J T3 (15-23h), Vie Descanso (D), Sáb T2 (07-15h), Dom Descanso (D).
-                        - Semana 4 (T1 - Turno 1): L-Mi T1 (23-07h), Jue T2 (07-15h), V-Dom T1 (23-07h).
-                        - Semana 5 (D - Descanso): Descanso total toda la semana (L a D).
+                        RÉGIMEN NATURAL DE 5 SEMANAS (De Lunes a Domingo):
+                        - Semana 1: L-V OI (Oficina / soporte / cubre turnos), Sáb T2 (07-15h), Dom Descanso (D).
+                        - Semana 2: L-Mi T2 (07-15h), Jue T1 (23-07h), V T2 (07-15h), Sáb-Dom T3 (15-23h).
+                        - Semana 3: L-J T3 (15-23h), Vie Descanso (D), Sáb T2 (07-15h), Dom Descanso (D).
+                        - Semana 4: L-Mi T1 (23-07h), Jue T2 (07-15h), V-Dom T1 (23-07h).
+                        - Semana 5: Descanso total toda la semana (L a D).
                         
-                        DEFINICIÓN DE ROLES EN EL CENTRO DE CONTROL:
+                        ROLES EN EL CENTRO DE CONTROL:
                         - C: Coordinador
                         - ET: Especialista Tensión
                         - EF: Especialista Frecuencia
                         - A: Analista
                         
-                        REGLAS OBLIGATORIAS:
-                        1. Respeta el orden de prioridad de los operadores tal como están listados.
-                        2. Asigna los turnos diarios (OI, T2, T3, T1, D) según la semana de ciclo en la que se encuentre cada operador.
-                        3. Novedades activas a considerar: {novedades_input if novedades_input else "Ninguna"}.
-                        4. Presenta siempre las respuestas y propuestas en tablas Markdown claras de Lunes a Domingo.
+                        INSTRUCCIONES CLAVE:
+                        1. Aplica por defecto este régimen natural de 5 semanas a cada operador según la semana de ciclo en la que se encuentre.
+                        2. Si el usuario te pide optimizar, ajustar o simular cambios (por ejemplo, cubrir un turno usando personal en OI o por una baja), puedes proponer modificaciones flexibles sobre este régimen natural.
+                        3. Respeta estrictamente los roles habilitados de cada operador y el orden de la lista.
+                        4. Presenta tus propuestas en tablas limpias y ordenadas en formato Markdown de Lunes a Domingo.
+                        5. Novedades activas: {novedades_input if novedades_input else "Ninguna"}.
                         """
 
             # Llamada al modelo Gemini
@@ -306,13 +307,13 @@ with tab_chat:
                 {"role": "assistant", "content": error_msg}
             )
 
-# Sección de visualización de ejemplo de la tabla de 5 semanas del ciclo
+# Sección de visualización de ejemplo de la aplicación del régimen
 st.markdown("---")
-st.subheader("📊 Vista Previa del Régimen de Turnos (Semana a Semana)")
+st.subheader("📊 Vista Previa de la Planificación Base por Ciclo")
 nombres_actuales = [op["Nombre"] for op in st.session_state.operadores]
 data = {
     "Operador": nombres_actuales,
-    "Ciclo Actual": [f"Semana {op.get('Semana Ciclo', 1)}" for op in st.session_state.operadores],
+    "Ciclo Base": [f"Semana {op.get('Semana Ciclo', 1)}" for op in st.session_state.operadores],
     "Lunes": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
     "Martes": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
     "Miércoles": ["OI", "T2", "T3", "T1", "D", "OI"][:num_operadores],
