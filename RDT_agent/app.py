@@ -1,3 +1,4 @@
+import json
 import os
 from google import genai
 import pandas as pd
@@ -13,8 +14,35 @@ st.set_page_config(
 st.title("🛡️ Agente Inteligente de Turnos - Centro de Control")
 st.markdown(
     "Sistema autónomo para la planificación, optimización y gestión de turnos"
-    " operativos 24/7 con matriz de multi-roles."
+    " operativos 24/7 con matriz de multi-roles y persistencia."
 )
+
+# Archivo local para guardar los operadores de forma permanente
+DB_FILE = "operadores.json"
+
+
+def cargar_operadores():
+  if os.path.exists(DB_FILE):
+    try:
+      with open(DB_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+    except Exception:
+      pass
+  # Valores por defecto si el archivo no existe
+  return [
+      {"Nombre": "Carlos Pérez", "Roles Habilitados": ["C", "ET", "EF", "A"]},
+      {"Nombre": "Ana Gómez", "Roles Habilitados": ["ET", "EF", "A"]},
+      {"Nombre": "Luis Torres", "Roles Habilitados": ["EF", "A"]},
+      {"Nombre": "María Ruiz", "Roles Habilitados": ["A"]},
+      {"Nombre": "Jorge Díaz", "Roles Habilitados": ["C", "ET"]},
+      {"Nombre": "Sofía Castro", "Roles Habilitados": ["EF", "ET", "A"]},
+  ]
+
+
+def guardar_operadores(ops):
+  with open(DB_FILE, "w", encoding="utf-8") as f:
+    json.dump(ops, f, ensure_ascii=False, indent=4)
+
 
 # Inicializar cliente de Gemini si hay API Key o Secrets
 client = None
@@ -25,19 +53,9 @@ try:
 except Exception:
   pass
 
-# --- GESTIÓN DE OPERADORES Y MULTI-ROLES EN SESSION STATE ---
+# --- GESTIÓN DE OPERADORES CON PERSISTENCIA ---
 if "operadores" not in st.session_state:
-  st.session_state.operadores = [
-      {
-          "Nombre": "Carlos Pérez",
-          "Roles Habilitados": ["C", "ET", "EF", "A"],
-      },
-      {"Nombre": "Ana Gómez", "Roles Habilitados": ["ET", "EF", "A"]},
-      {"Nombre": "Luis Torres", "Roles Habilitados": ["EF", "A"]},
-      {"Nombre": "María Ruiz", "Roles Habilitados": ["A"]},
-      {"Nombre": "Jorge Díaz", "Roles Habilitados": ["C", "ET"]},
-      {"Nombre": "Sofía Castro", "Roles Habilitados": ["EF", "ET", "A"]},
-  ]
+  st.session_state.operadores = cargar_operadores()
 
 # Sidebar para configuración de credenciales, parámetros y restricciones
 with st.sidebar:
@@ -83,15 +101,15 @@ with st.sidebar:
       if rol_a:
         roles_seleccionados.append("A")
 
-      st.session_state.operadores.append(
-          {
-              "Nombre": nuevo_nombre,
-              "Roles Habilitados": (
-                  roles_seleccionados if roles_seleccionados else ["A"]
-              ),
-          }
-      )
-      st.success(f"¡{nuevo_nombre} agregado con éxito!")
+      nuevo_registro = {
+          "Nombre": nuevo_nombre,
+          "Roles Habilitados": (
+              roles_seleccionados if roles_seleccionados else ["A"]
+          ),
+      }
+      st.session_state.operadores.append(nuevo_registro)
+      guardar_operadores(st.session_state.operadores)
+      st.success(f"¡{nuevo_nombre} agregado y guardado con éxito!")
       st.rerun()
 
   st.markdown("---")
@@ -138,7 +156,8 @@ with tab_equipo:
     st.session_state.operadores = [
         op for op in st.session_state.operadores if op["Nombre"] != op_a_eliminar
     ]
-    st.success(f"Operador {op_a_eliminar} eliminado.")
+    guardar_operadores(st.session_state.operadores)
+    st.success(f"Operador {op_a_eliminar} eliminado y cambios guardados.")
     st.rerun()
 
 with tab_chat:
@@ -152,8 +171,8 @@ with tab_chat:
             "role": "assistant",
             "content": (
                 "¡Hola! Soy tu agente experto en gestión de turnos."
-                " Ya tengo registrada la matriz de multi-roles de los"
-                " operadores (C, ET, EF, A) y las restricciones."
+                " Ya tengo registrada la matriz de multi-roles y la base de datos"
+                " persistente de operadores (C, ET, EF, A)."
                 " ¿Qué deseas planificar hoy?"
             ),
         }
@@ -202,9 +221,9 @@ with tab_chat:
                         4. Novedades activas, bajas o vacaciones: {novedades_input if novedades_input else "Ninguna"}.
                         
                         INSTRUCCIONES CLAVE:
-                        - Al asignar puestos en los turnos, DEBES RESPETAR ESTRICTAMENTE la matriz de roles habilitados de cada operador (por ejemplo, nunca asignes un rol para el que un operador no esté habilitado).
+                        - Al asignar puestos en los turnos, DEBES RESPETAR ESTRICTAMENTE la matriz de roles habilitados de cada operador.
                         - Distribuye las cargas de manera justa y equitativa.
-                        - Presenta las propuestas siempre en una tabla clara en formato Markdown indicando el puesto asignado (C, ET, EF, A) por cada día u hora.
+                        - Presenta las propuestas siempre en una tabla clara en formato Markdown indicando el puesto asignado (C, ET, EF, A) por cada día.
                         """
 
             # Llamada al modelo Gemini
