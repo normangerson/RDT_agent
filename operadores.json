@@ -103,5 +103,16 @@
     "Costo Turno": 14,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Ivan Unda",
+    "Roles Habilitados": [
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 14,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
