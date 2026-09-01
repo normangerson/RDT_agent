@@ -167,15 +167,21 @@ _CELL_BG = {
 }
 
 
-def _cell_style(v):
-  pc = mt.parse_code(str(v))
-  if pc["tipo"] == "T":
-    key = pc["turno"]
-  elif pc["tipo"] in ("OI", "D"):
-    key = pc["tipo"]
+_FUERA_BG = ("#fecaca", "#7f1d1d")  # fondo rojo claro para turnos fuera de régimen
+
+
+def _cell_style(v, fuera=False):
+  if fuera:
+    bg, fg = _FUERA_BG
   else:
-    key = str(v)
-  bg, fg = _CELL_BG.get(key, ("#ffffff", "#1e293b"))
+    pc = mt.parse_code(str(v))
+    if pc["tipo"] == "T":
+      key = pc["turno"]
+    elif pc["tipo"] in ("OI", "D"):
+      key = pc["tipo"]
+    else:
+      key = str(v)
+    bg, fg = _CELL_BG.get(key, ("#ffffff", "#1e293b"))
   return f"background-color:{bg};color:{fg};font-weight:700;text-align:center"
 
 # --------------------------------------------------------------------------- #
@@ -710,13 +716,22 @@ with tab_rol:
     fer = set(rol["feriados"])
     cols = [f"{mt.DIAS[mt._js_dow(mt._parse(f))]} {mt._parse(f).day}"
             + ("*" if f in fer else "") for f in g["fechas"]]
-    data = {fila["nombre"]: [fila["celdas"][f] for f in g["fechas"]]
-            for fila in g["filas"]}
-    grid = pd.DataFrame(data, index=cols).T
-    try:
-      vista = grid.style.map(_cell_style)
-    except AttributeError:  # pandas < 2.1
-      vista = grid.style.applymap(_cell_style)
+    noms = [fila["nombre"] for fila in g["filas"]]
+    grid = pd.DataFrame(
+        [[fila["celdas"][f] for f in g["fechas"]] for fila in g["filas"]],
+        index=noms, columns=cols)
+    _fuera = pd.DataFrame(
+        [[bool(rol["asig"][fila["id"]][f].get("fuera")) for f in g["fechas"]]
+         for fila in g["filas"]],
+        index=noms, columns=cols)
+
+    def _estilos(df):
+      return pd.DataFrame(
+          [[_cell_style(df.iat[i, j], _fuera.iat[i, j])
+            for j in range(df.shape[1])] for i in range(df.shape[0])],
+          index=df.index, columns=df.columns)
+
+    vista = grid.style.apply(_estilos, axis=None)
     _rh = 22  # alto de fila compacto
     _h = min(34 + _rh * len(grid), 760)
     try:
@@ -725,8 +740,9 @@ with tab_rol:
       st.dataframe(vista, use_container_width=True, height=_h)
     st.caption(
         "T1 23-07 (nocturno, empieza la víspera) · T2 07-15 · T3 15-23 · "
-        "OI oficina · D descanso · V/CP/PER/LM ausencias. Cabecera con * = "
-        "feriado. El prefijo del código es el rol (C/ET/EF/A)."
+        "OI oficina · D descanso · V/CP/PER/LM ausencias · **fondo rojo = "
+        "turno fuera de régimen (horas extra)**. Cabecera con * = feriado. "
+        "El prefijo del código es el rol (C/ET/EF/A)."
     )
     st.download_button(
         "⬇️ Descargar CSV", grid.to_csv().encode("utf-8-sig"),
