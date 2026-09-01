@@ -16,6 +16,7 @@ resultado, pero no inventa la grilla.
 | `motor_turnos.py` | Motor determinista puro (sin Streamlit/Gemini). Todos los criterios de elaboración del rol. Ejecutable como script para un smoke test: `python motor_turnos.py`. |
 | `agente_turnos.py` | Envuelve el motor como *tools* de function calling para Gemini + el `system_instruction`. |
 | `app.py` | Interfaz Streamlit: chat del agente + pestañas para editar todos los criterios y ver el rol generado. |
+| `almacen.py` | Persistencia del estado: archivos locales o, en la nube, una rama del repo vía la API de GitHub. |
 | `operadores.json` | Plantilla de operadores (se crea al primer guardado). |
 | `config_rol.json` | Régimen, reglas, feriados, ausencias, forzados, prioridad y cobertura. |
 
@@ -58,6 +59,31 @@ streamlit run app.py
 Necesitas una API Key de Google Gemini (variable de entorno `GEMINI_API_KEY`,
 `st.secrets["GEMINI_API_KEY"]` o el campo de la barra lateral) sólo para el
 chat; las pestañas y el motor funcionan sin ella.
+
+## Persistencia
+
+| Dónde corre | Qué pasa |
+|---|---|
+| **Local** | `operadores.json` y `config_rol.json` se guardan junto a `app.py`. Permanente. |
+| **Streamlit Cloud, sin secrets de GitHub** | Se guardan en el disco del contenedor: **efímero** (se pierde al dormir/reiniciar). |
+| **Streamlit Cloud, con secrets de GitHub** | Se guardan como commits en una **rama de datos** del repo (`app-data` por defecto). Permanente y versionado. |
+
+### Activar el guardado en GitHub
+
+En *Manage app → Settings → Secrets* añade:
+
+```toml
+GEMINI_API_KEY = "..."
+GITHUB_TOKEN = "github_pat_..."      # PAT con permiso Contents: Read and write sobre el repo
+GITHUB_REPO = "normangerson/RDT_agent"
+# opcionales:
+# GITHUB_DATA_BRANCH = "app-data"    # rama donde se guarda el estado (no es la del deploy)
+# GITHUB_DATA_PREFIX = ""            # subcarpeta dentro de esa rama
+```
+
+La app crea la rama `app-data` sola la primera vez que guarda. Esa rama **no**
+debe ser la del deploy (si no, cada guardado dispara un redeploy). El estado del
+almacenamiento y un botón «Guardar ahora» están en la barra lateral.
 
 ### Ejemplos de conversación
 

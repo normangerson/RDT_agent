@@ -1,10 +1,10 @@
-import json
 import os
 
 import pandas as pd
 import streamlit as st
 from google import genai
 
+import almacen
 import motor_turnos as mt
 import agente_turnos as ag
 
@@ -27,29 +27,34 @@ st.markdown(
 #  Persistencia                                                                #
 # --------------------------------------------------------------------------- #
 _HERE = os.path.dirname(os.path.abspath(__file__))
-DB_FILE = os.path.join(_HERE, "operadores.json")
-CFG_FILE = os.path.join(_HERE, "config_rol.json")
+DB_FILE = "operadores.json"
+CFG_FILE = "config_rol.json"
 
 
-def cargar_operadores():
-  if os.path.exists(DB_FILE):
-    try:
-      with open(DB_FILE, "r", encoding="utf-8") as f:
-        ops = json.load(f)
-      for o in ops:  # completar campos nuevos en registros antiguos
-        o.setdefault("Puesto", "")
-        o.setdefault("Costo Turno", 50)
-        o.setdefault("Fecha Base", "")
-        o.setdefault("Activo", True)
-      return ops
-    except Exception:
-      pass
-  return mt.operadores_ejemplo()
+def _secret(key, default=None):
+  try:
+    if key in st.secrets:
+      return st.secrets[key]
+  except Exception:
+    pass
+  return os.environ.get(key, default)
 
 
-def guardar_operadores(ops):
-  with open(DB_FILE, "w", encoding="utf-8") as f:
-    json.dump(ops, f, ensure_ascii=False, indent=4)
+def _get_store():
+  store = st.session_state.get("store")
+  if store is None:
+    store = almacen.make_store(
+        _HERE,
+        token=_secret("GITHUB_TOKEN"),
+        repo=_secret("GITHUB_REPO", "normangerson/RDT_agent"),
+        branch=_secret("GITHUB_DATA_BRANCH", "app-data"),
+        prefix=_secret("GITHUB_DATA_PREFIX", ""),
+    )
+    st.session_state.store = store
+  return store
+
+
+STORE = _get_store()
 
 
 def _merge(base, disk):
@@ -61,20 +66,32 @@ def _merge(base, disk):
   return base
 
 
+def cargar_operadores():
+  ops = STORE.load(DB_FILE)
+  if not ops:
+    return mt.operadores_ejemplo()
+  for o in ops:  # completar campos nuevos en registros antiguos
+    o.setdefault("Puesto", "")
+    o.setdefault("Costo Turno", 50)
+    o.setdefault("Fecha Base", "")
+    o.setdefault("Activo", True)
+  return ops
+
+
+def guardar_operadores(ops):
+  STORE.save(DB_FILE, ops)
+
+
 def cargar_config():
   cfg = mt.config_default()
-  if os.path.exists(CFG_FILE):
-    try:
-      with open(CFG_FILE, "r", encoding="utf-8") as f:
-        cfg = _merge(cfg, json.load(f))
-    except Exception:
-      pass
+  disk = STORE.load(CFG_FILE)
+  if disk:
+    cfg = _merge(cfg, disk)
   return cfg
 
 
 def guardar_config(cfg):
-  with open(CFG_FILE, "w", encoding="utf-8") as f:
-    json.dump(cfg, f, ensure_ascii=False, indent=4)
+  STORE.save(CFG_FILE, cfg)
 
 
 if "operadores" not in st.session_state:
@@ -132,6 +149,19 @@ with st.sidebar:
   )
 
   guardar_config(CFG)
+
+  st.markdown("---")
+  st.subheader("💾 Almacenamiento")
+  st.caption(STORE.describe())
+  if STORE.kind == "local":
+    st.caption("Efímero en Streamlit Cloud. Para guardado permanente define los "
+               "secrets `GITHUB_TOKEN` y `GITHUB_REPO`.")
+  if st.button("Guardar ahora"):
+    guardar_operadores(OPS)
+    guardar_config(CFG)
+    st.success("Guardado." if not STORE.last_error else "")
+  if STORE.last_error:
+    st.error(f"Almacenamiento: {STORE.last_error}")
 
 # --------------------------------------------------------------------------- #
 #  Pestañas                                                                    #
