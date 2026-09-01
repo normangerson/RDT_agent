@@ -484,7 +484,7 @@ with tab_equipo:
         "Turno ese lunes": r["turno_1er_lunes"],
         "Activo": "sí" if r["activo"] else "no",
     } for r in anc["operadores"]])
-    st.dataframe(dfa, use_container_width=True, hide_index=True)
+    st.dataframe(dfa, width='stretch', hide_index=True)
 
   CFG["prioridad"] = [o["Nombre"] for o in OPS]
   guardar_config(CFG)
@@ -512,7 +512,7 @@ with tab_regimen:
       index=[f"S{i+1} · {mt.SEM_NOMBRE[i+1]}" for i in range(5)],
   )
   edited = st.data_editor(
-      df, use_container_width=True,
+      df, width='stretch',
       column_config={d: st.column_config.SelectboxColumn(
           d, options=["OI", "T1", "T2", "T3", "D"], required=True) for d in dias},
   )
@@ -538,7 +538,7 @@ with tab_cobertura:
              for pu in mt.PUESTOS]
     dfc = pd.DataFrame(filas).set_index("Puesto")
     ed = st.data_editor(
-        dfc, key=f"cob_{k}", use_container_width=True,
+        dfc, key=f"cob_{k}", width='stretch',
         column_config={tn: st.column_config.NumberColumn(
             tn, min_value=0, max_value=1, step=1) for tn in ("T1", "T2", "T3")})
     for pu in mt.PUESTOS:
@@ -743,10 +743,19 @@ with tab_rol:
     vista = grid.style.apply(_estilos, axis=None)
     _rh = 22  # alto de fila compacto
     _h = min(34 + _rh * len(grid), 760)
+
+    def _mostrar(colw):
+      cc = {c: st.column_config.Column(width=colw) for c in cols}
+      cc["_index"] = st.column_config.Column("Operador", width="medium")
+      try:
+        st.dataframe(vista, height=_h, row_height=_rh, column_config=cc)
+      except TypeError:
+        st.dataframe(vista, width='stretch', height=_h)
+
     try:
-      st.dataframe(vista, use_container_width=True, height=_h, row_height=_rh)
-    except TypeError:  # Streamlit sin row_height
-      st.dataframe(vista, use_container_width=True, height=_h)
+      _mostrar(46)          # ancho de celda estrecho (px)
+    except Exception:
+      _mostrar("small")     # Streamlit que no acepta ancho en px
     st.caption(
         "T1 23-07 (nocturno, empieza la víspera) · T2 07-15 · T3 15-23 · "
         "OI oficina · D descanso · V/CP/PER/LM ausencias · **fondo rojo** = "
@@ -793,7 +802,7 @@ with tab_rol:
             "Régimen": f"S{r['regimen_semana']} · {r['regimen_turno']}",
             "Código final": r["codigo_final"],
             "Motivo": r["motivo"],
-        } for r in dg["candidatos"]]), use_container_width=True, hide_index=True)
+        } for r in dg["candidatos"]]), width='stretch', hide_index=True)
       else:
         st.info(f"Ningún operador tiene **{dpuesto}** entre sus roles habilitados.")
       if dg["nota"]:
