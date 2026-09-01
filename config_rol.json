@@ -91,7 +91,13 @@
   "ausenciasCfg": {
     "bloqPend": true
   },
-  "forzados": [],
+  "forzados": [
+    {
+      "id": "f0",
+      "tipo": "OI_PRIO",
+      "personaId": "Henry Morales"
+    }
+  ],
   "prioridad": [
     "Salvador Roca",
     "Nestor Uscamayta",
