@@ -203,5 +203,16 @@
     "Costo Turno": 6,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Magnum Carbajal",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 50,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
