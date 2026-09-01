@@ -36,18 +36,6 @@
     "Activo": true
   },
   {
-    "Nombre": "Oscar Quispe",
-    "Roles Habilitados": [
-      "C",
-      "ET",
-      "EF"
-    ],
-    "Semana Ciclo": 1,
-    "Costo Turno": 16,
-    "Fecha Base": "2026-08-31",
-    "Activo": true
-  },
-  {
     "Nombre": "Henry Morales",
     "Roles Habilitados": [
       "C",
@@ -55,6 +43,18 @@
       "EF"
     ],
     "Semana Ciclo": 4,
+    "Costo Turno": 16,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
+  },
+  {
+    "Nombre": "Oscar Quispe",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 1,
     "Costo Turno": 16,
     "Fecha Base": "2026-08-31",
     "Activo": true
