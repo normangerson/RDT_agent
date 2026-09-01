@@ -1004,7 +1004,19 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
                 origen = {"OI": "OI", "D": "descanso"}.get(base, base)
                 motivo = f"cubriendo {pc['turno']} (su régimen ese día era {origen})"
         elif pc["tipo"] == "OI":
-            motivo = "en OI, disponible (no se necesitó o hay prioridad mayor)"
+            _proh = set(prohibidas(DESCANSO_MIN_HORAS))
+            _tp = parse_code(rol["asig"][op["id"]].get(
+                _ymd(_add_days(_parse(fecha), -1)), {}).get("cod", "")).get("turno")
+            _tn = parse_code(rol["asig"][op["id"]].get(
+                _ymd(_add_days(_parse(fecha), 1)), {}).get("cod", "")).get("turno")
+            if _tp and (_tp, turno) in _proh:
+                motivo = (f"en OI, pero hizo {_tp} el día anterior → no puede "
+                          f"encadenar {turno} (descanso mínimo)")
+            elif _tn and (turno, _tn) in _proh:
+                motivo = (f"en OI, pero hace {_tn} al día siguiente → no puede "
+                          f"encadenar {turno} (descanso mínimo)")
+            else:
+                motivo = "en OI, disponible (no se necesitó o hay prioridad mayor)"
         elif pc["tipo"] == "D":
             motivo = "en descanso ese día"
             motivo += (" — el motor sólo lo usaría con horas extra si el slot es"
