@@ -1,0 +1,147 @@
+{
+  "regimen": {
+    "nSem": 5,
+    "bloqueDow": 1,
+    "patron": [
+      "OI",
+      "OI",
+      "OI",
+      "OI",
+      "OI",
+      "T2",
+      "D",
+      "T2",
+      "T2",
+      "T2",
+      "T1",
+      "T2",
+      "T3",
+      "T3",
+      "T3",
+      "T3",
+      "T3",
+      "T3",
+      "D",
+      "T2",
+      "D",
+      "T1",
+      "T1",
+      "T1",
+      "T2",
+      "T1",
+      "T1",
+      "T1",
+      "D",
+      "D",
+      "D",
+      "D",
+      "D",
+      "D",
+      "D"
+    ],
+    "reglas": {
+      "unoPorDia": true,
+      "minDescansoHoras": 12,
+      "maxNocturnosSeguidos": 3
+    }
+  },
+  "feriados": [],
+  "ausencias": [],
+  "ausenciasCfg": {
+    "bloqPend": true
+  },
+  "forzados": [],
+  "prioridad": [],
+  "cobertura": {
+    "LV": {
+      "T1": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T2": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T3": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      }
+    },
+    "SAB": {
+      "T1": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T2": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T3": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      }
+    },
+    "DOM": {
+      "T1": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T2": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T3": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      }
+    },
+    "FER": {
+      "T1": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T2": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      },
+      "T3": {
+        "Coordinador": 1,
+        "Especialista Tensión": 1,
+        "Especialista Frecuencia": 1,
+        "Analista": 1
+      }
+    }
+  },
+  "overrides": {},
+  "costos": {
+    "fDesc": null,
+    "fFer": null,
+    "fNoc": null
+  },
+  "ui": {
+    "mesOficial": "2026-08",
+    "mesesRef": 2
+  }
+}
