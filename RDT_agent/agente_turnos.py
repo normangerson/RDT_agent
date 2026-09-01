@@ -355,8 +355,9 @@ def registrar_forzado_dia(operador: str, codigo: str, desde: str,
 
     Args:
         operador: nombre del operador.
-        codigo: "D", "OI", "T1", "T2" o "T3" (el prefijo del rol se añade solo),
-            o un código completo tipo "ET2".
+        codigo: "D" (descanso), "OI" (oficina), "T1"/"T2"/"T3" (turno, el
+            prefijo del rol se añade solo), "CP" (capacitación: sale del rol
+            como una ausencia), o un código completo tipo "ET2".
         desde: fecha inicial "YYYY-MM-DD".
         hasta: fecha final "YYYY-MM-DD" (vacío = un solo día).
     """

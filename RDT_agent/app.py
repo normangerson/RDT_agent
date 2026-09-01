@@ -595,9 +595,10 @@ with tab_forzados:
       " viernes por defecto (deja su turno de régimen), pero el motor **sí"
       " puede jalarlo** a un turno para cubrir un mínimo obligatorio si no hay"
       " nadie más (último recurso, antes que dejar el hueco).  ·  **Rango de"
-      " días:** fija un código (D / OI / T1 / T2 / T3) en todo el rango — pisa"
-      " el régimen, las ausencias y la semana de descanso.  ·  Los tres"
-      " respetan sábados/domingos según el régimen (salvo el rango de días)."
+      " días:** fija un código (D descanso · OI oficina · T1/T2/T3 turno ·"
+      " **CP capacitación**) en todo el rango — pisa el régimen, las ausencias"
+      " y la semana de descanso.  ·  Los tres respetan sábados/domingos según"
+      " el régimen (salvo el rango de días)."
   )
   c1, c2, c3 = st.columns([2, 2, 1])
   f_op = c1.selectbox("Operador", [o["Nombre"] for o in OPS], key="fz_op")
@@ -608,8 +609,9 @@ with tab_forzados:
     d1.date_input("Desde", format="YYYY-MM-DD", key="fz_desde")
     d2.date_input("Hasta", value=None, format="YYYY-MM-DD", key="fz_hasta",
                   help="Vacío = un solo día")
-    d3.selectbox("Código", ["D", "OI", "T1", "T2", "T3"], key="fz_cod",
-                 help="T1/T2/T3 llevan el prefijo del rol automáticamente")
+    d3.selectbox("Código", ["D", "OI", "T1", "T2", "T3", "CP"], key="fz_cod",
+                 help="T1/T2/T3 llevan el prefijo del rol automáticamente · "
+                      "CP = capacitación (sale del rol, como una ausencia)")
   if c3.button("Agregar regla"):
     fz = CFG.setdefault("forzados", [])
     _tipo = {"OI permanente": "OI_PERM", "OI prioridad": "OI_PRIO"}.get(f_tipo)
