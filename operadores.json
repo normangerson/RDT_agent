@@ -22,5 +22,17 @@
     "Costo Turno": 16,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Nestor Uscamayta",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 3,
+    "Costo Turno": 16,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
