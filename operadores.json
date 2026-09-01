@@ -158,5 +158,17 @@
     "Costo Turno": 9,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Juan Puicon",
+    "Roles Habilitados": [
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 10,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
