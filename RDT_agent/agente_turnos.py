@@ -165,12 +165,15 @@ def generar_rol(
     meses_referencia: int = 2,
     optimizar_oi: bool = True,
     cubrir_con_personal_en_descanso: bool = True,
-    permitir_horas_extra_en_t1_y_ef: bool = False,
 ) -> dict:
     """Genera el rol de turnos de forma DETERMINISTA aplicando todos los
     criterios: régimen de 5 semanas anclado por operador, semana de descanso
     intocable, ausencias, feriados, forzados, prioridad y requisitos de
-    cobertura (máx. 4 por turno, 1 por puesto, objetivo blando de 1 de cada rol).
+    cobertura (máx. 4 por turno, 1 por puesto).
+
+    Cada mínimo ≥ 1 del módulo de cobertura es OBLIGATORIO y el motor recurre a
+    lo que haga falta para cumplirlo (personal en OI y, si no alcanza, horas
+    extra de personal en descanso). Los mínimos en 0 son sólo un objetivo blando.
 
     Úsalo SIEMPRE que el usuario pida generar, recalcular, optimizar, simular o
     revisar el rol. No construyas la grilla a mano: llama a esta función y
@@ -180,10 +183,9 @@ def generar_rol(
         mes_oficial: mes a planificar en formato "YYYY-MM" (vacío = el configurado).
         meses_referencia: nº de meses siguientes a incluir como referencia (0-11).
         optimizar_oi: usar al personal en su semana de oficina para cubrir turnos.
-        cubrir_con_personal_en_descanso: permitir horas extra (fuera de régimen)
-            en slots críticos si no se cubren por régimen.
-        permitir_horas_extra_en_t1_y_ef: extender las horas extra también a los
-            slots de prioridad baja (turno T1 y Especialista Frecuencia).
+        cubrir_con_personal_en_descanso: permitir horas extra (fuera de régimen,
+            con sobretasa) para cumplir los mínimos obligatorios que no se
+            cubren por régimen ni con personal de OI.
 
     Returns:
         dict con la grilla en Markdown del mes oficial, el resumen de cobertura,
@@ -196,7 +198,6 @@ def generar_rol(
         meses_ref=meses_referencia,
         optimizar_oi=optimizar_oi,
         cubrir_con_descanso=cubrir_con_personal_en_descanso,
-        horas_extra_t1_ef=permitir_horas_extra_en_t1_y_ef,
     )
     CTX.ultimo_rol = rol
     res = mt.resumen(rol)
@@ -452,12 +453,16 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
 - Ausencias (VAC/CAP/PER/MED) y feriados.
 - Forzados: OI permanente (Lun-Vie) o día puntual.
 - Prioridad entre operadores: el nº 1 de la lista manda al repartir roles.
-- Cobertura por turno y tipo de día, con reglas duras: máx. 4 personas por
-  turno y 1 por puesto; objetivo blando de 1 de cada rol.
-- Reparto del personal escaso: 1º gente en OI, 2º reasignar a quien hace algo
-  prescindible, 3º horas extra (personal en descanso, fuera de régimen, con
-  sobretasa). Para T1 y Especialista Frecuencia sólo se gastan horas extra si el
-  usuario lo autoriza.
+- Cobertura por turno y tipo de día. El módulo de cobertura ES la definición de
+  prioridad: cada mínimo >= 1 es OBLIGATORIO (para cualquier puesto y turno,
+  incluido T1) y el motor recurre a régimen -> personal en OI -> horas extra de
+  personal en descanso hasta cumplirlo; si no lo logra es un incumplimiento (X).
+  Un mínimo en 0 es sólo un objetivo blando (se intenta 1 con gente de OI, sin
+  error si falta). Reglas duras: máx. 4 personas por turno y 1 por puesto.
+- Reparto del personal escaso: 1º gente en OI, 2º reasignar a quien cubre un
+  slot no obligatorio, 3º horas extra (personal en descanso, fuera de régimen,
+  con sobretasa). PRIO de puestos (C > ET > Analista > EF) y turnos
+  (T2 > T3 > T1) sólo desempatan cuando no se puede cubrir todo.
 
 ROLES: C Coordinador · ET Especialista Tensión · EF Especialista Frecuencia ·
 A Analista. En la grilla el prefijo del código es el rol (p. ej. ET2 = Esp.

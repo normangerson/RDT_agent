@@ -479,7 +479,6 @@ def generar_rol(
     meses_ref: int | None = None,
     optimizar_oi: bool = True,
     cubrir_con_descanso: bool = True,
-    horas_extra_t1_ef: bool = False,
 ) -> dict:
     """Genera el rol completo de forma determinista.
 
@@ -625,10 +624,13 @@ def generar_rol(
                 out.append(p)
         return out
 
-    def es_tolerable(tn: str, pu: str) -> bool:
-        return pu == PRIO_PUESTO[-1] or tn == PRIO_TURNO[-1]
-
     # 3) cobertura por fecha y turno ------------------------------------------
+    #    Regla: TODO mínimo >= 1 del módulo de cobertura es OBLIGATORIO y el
+    #    motor recurre a lo que haga falta para cumplirlo (personal en OI y,
+    #    si no alcanza, horas extra de personal en descanso). Los mínimos en 0
+    #    son sólo un objetivo blando (se intenta 1 con gente de OI, sin error).
+    #    PRIO_TURNO / PRIO_PUESTO sólo deciden el ORDEN en que se reparte el
+    #    personal escaso cuando no se puede cubrir todo.
     cob_resumen: dict[str, dict] = {}
     for f in all_fechas:
         td = tipo_dia(f, fer_set)
@@ -678,15 +680,17 @@ def generar_rol(
             c = parse_code(a["cod"])
             if c["tipo"] == "T":
                 rol = a.get("puestoCubierto") or rol_base(p)
-                return (es_tolerable(c["turno"], rol)
-                        and (cob[td][c["turno"]].get(rol, 0)) == 0)
+                # cubre un slot que NO es obligatorio -> se puede mover a uno que sí
+                return (cob[td][c["turno"]].get(rol, 0)) == 0
             return False
 
-        def llenar(tn: str, pu: str, objetivo: int, extra: bool) -> None:
+        def llenar(tn: str, pu: str, objetivo: int, extra: bool,
+                   obligatorio: bool) -> None:
             have = len(en_turno_rol(f, tn, pu))
 
-            # (1) gente en su semana de OI (o spill) — por jerarquía y luego costo
-            if have < objetivo and optimizar_oi and tn != "T1":
+            # (1) gente en su semana de OI (o spill) — por jerarquía y luego costo.
+            #     Para T1 sólo se recurre a OI si el slot es obligatorio.
+            if have < objetivo and optimizar_oi and (tn != "T1" or obligatorio):
                 cand = [
                     p for p in pers
                     if parse_code(asig[p["id"]][f]["cod"])["tipo"] == "OI"
@@ -733,9 +737,8 @@ def generar_rol(
                         a.pop(k, None)
                     have += 1
 
-            # (3) horas extra: personal en descanso -> fuera de régimen
-            if (have < objetivo and extra and cubrir_con_descanso
-                    and (tn != "T1" or horas_extra_t1_ef)):
+            # (3) horas extra: personal en descanso -> fuera de régimen (sobretasa)
+            if have < objetivo and extra and cubrir_con_descanso:
                 cand = [
                     p for p in pers
                     if parse_code(asig[p["id"]][f]["cod"])["tipo"] == "D"
@@ -757,37 +760,32 @@ def generar_rol(
                     a["puestoCubierto"] = pu
                     have += 1
 
-        # PASO A1: mínimos de slots CRÍTICOS (con horas extra si hace falta)
+        # PASO A: todos los mínimos >= 1 son OBLIGATORIOS -> cubrir con lo que
+        #         haga falta (OI y, si no alcanza, horas extra).
         for tn in PRIO_TURNO:
             for pu in PRIO_PUESTO:
                 req = cob[td][tn].get(pu, 0)
-                if req > 0 and not es_tolerable(tn, pu):
-                    llenar(tn, pu, req, True)
-        # PASO A2: mínimos de slots TOLERABLES (EF, T1)
+                if req > 0:
+                    llenar(tn, pu, req, extra=cubrir_con_descanso, obligatorio=True)
+        # PASO B: objetivo blando donde el mínimo es 0 -> intentar 1 sólo con
+        #         gente de OI, sin horas extra y sin marcar error.
         for tn in PRIO_TURNO:
             for pu in PRIO_PUESTO:
-                req = cob[td][tn].get(pu, 0)
-                if req > 0 and es_tolerable(tn, pu):
-                    llenar(tn, pu, req, horas_extra_t1_ef)
-        # PASO B: objetivo blando — 1 de cada rol, sólo con gente de OI
-        for tn in PRIO_TURNO:
-            for pu in PRIO_PUESTO:
-                llenar(tn, pu, 1, False)
+                if cob[td][tn].get(pu, 0) == 0:
+                    llenar(tn, pu, 1, extra=False, obligatorio=False)
 
-        # registrar cobertura y déficits
+        # registrar cobertura y déficits (todo mínimo incumplido = incumplimiento)
         for tn in PRIO_TURNO:
             cob_resumen[f][tn] = {}
             for pu in PRIO_PUESTO:
                 req = cob[td][tn].get(pu, 0)
-                tol = es_tolerable(tn, pu)
                 have = len(en_turno_rol(f, tn, pu))
-                cob_resumen[f][tn][pu] = {"req": req, "have": have, "tolerable": tol}
+                cob_resumen[f][tn][pu] = {"req": req, "have": have,
+                                          "obligatorio": req > 0}
                 if have < req:
                     errores.append({
-                        "tipo": "w" if tol else "e",
-                        "f": f,
-                        "txt": f"{f} {tn} {pu}: hay {have}, mínimo {req}"
-                               + (" · prioridad baja" if tol else ""),
+                        "tipo": "e", "f": f,
+                        "txt": f"{f} {tn} {pu}: hay {have}, mínimo {req}",
                     })
 
     # 4) validación de secuencia y semana de descanso -------------------------
@@ -903,7 +901,7 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
     req = config["cobertura"].get(td, {}).get(turno, {}).get(puesto, 0)
     resumen_slot = rol["cobertura"].get(fecha, {}).get(turno, {}).get(puesto, {})
     have = resumen_slot.get("have", 0)
-    tolerable = (puesto == PRIO_PUESTO[-1]) or (turno == PRIO_TURNO[-1])
+    obligatorio = req > 0
 
     filas = []
     for op in rol["operadores"]:
@@ -943,13 +941,17 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
                 origen = {"OI": "OI", "D": "descanso"}.get(base, base)
                 motivo = f"cubriendo {pc['turno']} (su régimen ese día era {origen})"
         elif pc["tipo"] == "OI":
-            motivo = ("en OI — el motor no pasa a nadie de OI al turno T1"
-                      if turno == "T1"
-                      else "en OI, disponible (no se necesitó o hay prioridad mayor)")
+            if not obligatorio and turno == "T1":
+                motivo = ("en OI — a T1 sólo se recurre a personal de OI si el "
+                          "mínimo del módulo de cobertura es ≥ 1")
+            else:
+                motivo = "en OI, disponible (no se necesitó o hay prioridad mayor)"
         elif pc["tipo"] == "D":
-            motivo = "en descanso ese día — sólo entraría con horas extra"
-            if tolerable:
-                motivo += " (para T1/EF hay que autorizarlas)"
+            motivo = "en descanso ese día"
+            motivo += (" — el motor sólo lo usaría con horas extra si el slot es"
+                       " obligatorio y está activado «cubrir con personal en"
+                       " descanso»") if obligatorio else \
+                      " — no se toca porque este slot no es obligatorio (mínimo 0)"
         else:
             motivo = cell["cod"]
 
@@ -962,16 +964,19 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
             "motivo": motivo,
         })
 
-    nota = None
-    if tolerable:
-        nota = (f"{turno if turno == 'T1' else ''}"
-                f"{' y ' if turno == 'T1' and puesto == 'Especialista Frecuencia' else ''}"
-                f"{'Especialista Frecuencia' if puesto == 'Especialista Frecuencia' else ''}"
-                " es de PRIORIDAD BAJA: el motor no usa personal de OI ni horas"
-                " extra para cubrirlo. Si el régimen no pone a nadie con ese rol"
-                " ese día, el hueco queda como advertencia (▲), no como"
-                " incumplimiento. Actívalo con «horas extra en T1 y Esp."
-                " Frecuencia» o ajusta el régimen / el anclaje.")
+    if not obligatorio:
+        nota = ("Este slot NO es obligatorio (mínimo 0 en el módulo de"
+                " cobertura): el motor sólo intenta poner 1 con personal de OI"
+                " y no marca error si no lo logra. Súbelo a 1 para exigirlo.")
+    elif have >= req:
+        nota = None
+    else:
+        nota = ("Slot OBLIGATORIO sin cubrir. El motor ya intentó régimen + OI"
+                " + horas extra. Los motivos de arriba explican por qué no"
+                " alcanzó: si todos están en descanso, activa «cubrir faltantes"
+                " con personal en descanso»; si es cosa del régimen o del"
+                " anclaje, ajústalo; si no hay personal con ese rol, habilítalo"
+                " en más operadores.")
 
     return {
         "fecha": fecha,
@@ -979,6 +984,7 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
         "tipo_dia": td,
         "turno": turno,
         "puesto": puesto,
+        "obligatorio": obligatorio,
         "requerido": req,
         "asignados": have,
         "cumple": have >= req,

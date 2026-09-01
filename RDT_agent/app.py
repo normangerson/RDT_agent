@@ -621,18 +621,22 @@ with tab_feriados:
 # ===================== ROL GENERADO =================================== #
 with tab_rol:
   st.subheader("📅 Rol generado (motor determinista)")
-  c1, c2, c3 = st.columns(3)
-  opt_oi = c1.checkbox("Optimizar semana OI para cobertura", True)
-  opt_extra = c2.checkbox("Cubrir faltantes con personal en descanso", True)
-  opt_t1 = c3.checkbox("Horas extra en T1 y Esp. Frecuencia", False)
+  st.caption(
+      "Cada mínimo ≥ 1 del módulo **Cobertura** es obligatorio: el motor lo"
+      " cubre con régimen → personal de OI → horas extra. Los mínimos en 0 son"
+      " sólo un objetivo blando."
+  )
+  c1, c2 = st.columns(2)
+  opt_oi = c1.checkbox("Usar personal de OI para cubrir turnos", True)
+  opt_extra = c2.checkbox(
+      "Cubrir faltantes obligatorios con personal en descanso (horas extra)", True)
 
   if st.button("⚙️ Generar rol", type="primary"):
     st.session_state.rol = mt.generar_rol(
         OPS, CFG,
         mes_oficial=CFG["ui"].get("mesOficial") or None,
         meses_ref=CFG["ui"].get("mesesRef", 2),
-        optimizar_oi=opt_oi, cubrir_con_descanso=opt_extra,
-        horas_extra_t1_ef=opt_t1)
+        optimizar_oi=opt_oi, cubrir_con_descanso=opt_extra)
 
   rol = st.session_state.get("rol")
   if not rol:
@@ -684,12 +688,15 @@ with tab_rol:
       dpuesto = d3.selectbox("Puesto", mt.PUESTOS, key="diag_p",
                              index=1)
       dg = mt.diagnostico_slot(rol, CFG, dfecha, dturno, dpuesto)
-      estado = "✅ cubierto" if dg["cumple"] else (
-          "▲ sin cubrir (prioridad baja)" if (dturno == "T1"
-          or dpuesto == "Especialista Frecuencia") else "✕ sin cubrir")
+      if not dg["obligatorio"]:
+        estado = "○ no obligatorio (mínimo 0)"
+      elif dg["cumple"]:
+        estado = "✅ cubierto"
+      else:
+        estado = "✕ incumplimiento (obligatorio sin cubrir)"
       st.markdown(
           f"**{dg['dia']} {mt._parse(dfecha).day}** · {dturno} · {dpuesto} "
-          f"({dg['tipo_dia']}) — requerido {dg['requerido']}, "
+          f"({dg['tipo_dia']}) — mínimo {dg['requerido']}, "
           f"asignados {dg['asignados']} → {estado}")
       if dg["candidatos"]:
         st.dataframe(pd.DataFrame([{

@@ -25,19 +25,24 @@ resultado, pero no inventa la grilla.
 - **Régimen rotativo de 5 semanas** editable, anclado por operador
   (fecha base = un lunes + semana del ciclo en esa fecha).
 - **Semana de descanso intocable** (Lun–Dom): el motor nunca la usa para cubrir.
-- **Reglas de secuencia:** descanso mínimo entre turnos → transiciones
-  prohibidas al día siguiente; máximo de turnos T1 (nocturnos) consecutivos.
+- **Reglas de secuencia** (fijas): 1 turno por día y descanso mínimo entre
+  turnos → no se encadena T1→T2, T1→T3 ni T3→T2 al día siguiente.
 - **Ausencias:** vacaciones / capacitación / permiso / licencia médica, con
   estado aprobada/solicitada.
 - **Feriados:** cambian el tipo de día y activan la sobretasa.
 - **Forzados:** OI permanente (Lun–Vie) o código en un día puntual.
 - **Prioridad / jerarquía** entre operadores (el nº 1 manda al repartir roles).
-- **Cobertura** mínima por turno y tipo de día, con reglas duras: máx. 4
-  personas por turno, 1 por puesto; objetivo blando de 1 de cada rol.
+- **Cobertura** por turno y tipo de día — **es la definición de prioridad**:
+  cada mínimo ≥ 1 es **obligatorio** (cualquier puesto y turno, T1 incluido) y
+  el motor recurre a régimen → personal de OI → horas extra hasta cumplirlo;
+  si no lo logra es un incumplimiento (✕). Un mínimo en 0 es sólo un objetivo
+  blando (se intenta 1 con gente de OI, sin error). Reglas duras: máx. 4
+  personas por turno, 1 por puesto.
 - **Reparto del personal escaso, escalonado:** 1º gente en su semana de OI,
-  2º reasignar a quien hace algo prescindible, 3º horas extra (personal en
-  descanso, fuera de régimen, con sobretasa). Para T1 y Especialista Frecuencia
-  sólo se gastan horas extra si el usuario lo autoriza.
+  2º reasignar a quien cubre un slot no obligatorio, 3º horas extra (personal
+  en descanso, fuera de régimen, con sobretasa). El orden de puestos
+  (C › ET › Analista › EF) y turnos (T2 › T3 › T1) sólo desempata cuando no
+  se puede cubrir todo.
 - **Costos:** costo base (turnos en régimen) + sobretasa de los turnos fuera de
   régimen según factores configurables (D. Leg. 713 / D.S. 007-2002-TR).
 
