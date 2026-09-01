@@ -140,6 +140,23 @@ st.caption(
 )
 
 
+def _build_id():
+  """Commit corto que corre ahora mismo (para saber si el deploy está al día)."""
+  try:
+    here = os.path.dirname(os.path.abspath(__file__))
+    for root in (here, os.path.dirname(here)):
+      head = os.path.join(root, ".git", "HEAD")
+      if os.path.exists(head):
+        ref = open(head, encoding="utf-8").read().strip()
+        if ref.startswith("ref:"):
+          rp = os.path.join(root, ".git", *ref[4:].strip().split("/"))
+          return open(rp, encoding="utf-8").read().strip()[:7]
+        return ref[:7]
+  except Exception:
+    pass
+  return "local"
+
+
 # --- Coloreado de la grilla como en RDTLightning ------------------------- #
 _CELL_BG = {
     "T1": ("#64748b", "#ffffff"), "T2": ("#e0f2fe", "#075985"),
@@ -287,6 +304,20 @@ with st.sidebar:
     st.success("Guardado." if not STORE.last_error else "")
   if STORE.last_error:
     st.error(f"Almacenamiento: {STORE.last_error}")
+
+  st.markdown("---")
+  st.caption(f"build `{_build_id()}`")
+  c_reg, c_all = st.columns(2)
+  if c_reg.button("Restablecer régimen", help="Vuelve al patrón de 5 semanas "
+                  "por defecto (uniforme, sin transiciones prohibidas)."):
+    CFG["regimen"]["patron"] = mt.patron_default()
+    guardar_config(CFG)
+    st.rerun()
+  if c_all.button("Restablecer config", help="Borra régimen, cobertura, "
+                  "feriados, ausencias y forzados. NO toca los operadores."):
+    st.session_state.config = mt.config_default()
+    guardar_config(st.session_state.config)
+    st.rerun()
 
 # --------------------------------------------------------------------------- #
 #  Pestañas                                                                    #
