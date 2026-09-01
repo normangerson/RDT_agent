@@ -181,5 +181,16 @@
     "Costo Turno": 9,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Bryan Cristobal",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 4,
+    "Costo Turno": 6,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
