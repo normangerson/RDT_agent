@@ -399,28 +399,27 @@ with tab_equipo:
 
   # --- Lista ------------------------------------------------------------- #
   st.markdown("#### Personal registrado")
-  h = st.columns([0.5, 3.3, 2.2, 1.6, 1, 1, 0.6, 0.6, 0.6])
-  for col, txt in zip(h, ["#", "Nombre", "Rol base", "Roles", "Ciclo", "Costo",
-                          "", "", ""]):
+  _W = [0.5, 4, 2.4, 1.1, 1, 0.6, 0.6, 0.6]
+  h = st.columns(_W)
+  for col, txt in zip(h, ["#", "Nombre", "Roles", "Ciclo", "Costo", "", "", ""]):
     col.caption(txt)
   for idx, op in enumerate(OPS):
-    c = st.columns([0.5, 3.3, 2.2, 1.6, 1, 1, 0.6, 0.6, 0.6])
+    c = st.columns(_W)
     inact = "" if op.get("Activo", True) else " 💤"
     c[0].markdown(f"**{idx+1}**")
     c[1].markdown(f"**{op['Nombre']}**{inact}")
-    c[2].markdown(mt.rol_principal(op))
-    c[3].markdown("`" + " ".join(op.get("Roles Habilitados", [])) + "`")
-    c[4].markdown(f"S{op.get('Semana Ciclo', 1)}")
-    c[5].markdown(str(op.get("Costo Turno", 50)))
-    if idx > 0 and c[6].button("▲", key=f"up_{idx}"):
+    c[2].markdown("`" + " ".join(op.get("Roles Habilitados", [])) + "`")
+    c[3].markdown(f"S{op.get('Semana Ciclo', 1)}")
+    c[4].markdown(str(op.get("Costo Turno", 50)))
+    if idx > 0 and c[5].button("▲", key=f"up_{idx}"):
       OPS[idx - 1], OPS[idx] = OPS[idx], OPS[idx - 1]
       guardar_operadores(OPS)
       st.rerun()
-    if idx < len(OPS) - 1 and c[7].button("▼", key=f"down_{idx}"):
+    if idx < len(OPS) - 1 and c[6].button("▼", key=f"down_{idx}"):
       OPS[idx + 1], OPS[idx] = OPS[idx], OPS[idx + 1]
       guardar_operadores(OPS)
       st.rerun()
-    if c[8].button("✕", key=f"del_{idx}"):
+    if c[7].button("✕", key=f"del_{idx}"):
       OPS.pop(idx)
       guardar_operadores(OPS)
       st.rerun()

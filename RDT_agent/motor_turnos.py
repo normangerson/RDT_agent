@@ -335,11 +335,6 @@ def familia(rol: str) -> str:
     return FAMILIA.get(rol, rol)
 
 
-def rol_principal(op: dict) -> str:
-    """Rol base 'de cara' de un operador crudo (para mostrar en el UI)."""
-    return rol_base(_norm_operador(op, "2020-01-06"))
-
-
 # --------------------------------------------------------------------------- #
 #  Régimen y códigos                                                           #
 # --------------------------------------------------------------------------- #
