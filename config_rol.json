@@ -70,6 +70,14 @@
       "desde": "2026-09-01",
       "hasta": "2026-09-05",
       "estado": "Aprobada"
+    },
+    {
+      "id": "a3_Christian Barturen",
+      "personaId": "Christian Barturen",
+      "tipo": "VAC",
+      "desde": "2026-09-04",
+      "hasta": "2026-09-13",
+      "estado": "Aprobada"
     }
   ],
   "ausenciasCfg": {
