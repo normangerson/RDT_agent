@@ -51,7 +51,9 @@
     "bloqPend": true
   },
   "forzados": [],
-  "prioridad": [],
+  "prioridad": [
+    "Salvador Roca"
+  ],
   "cobertura": {
     "LV": {
       "T1": {
