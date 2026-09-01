@@ -51,9 +51,7 @@
     "bloqPend": true
   },
   "forzados": [],
-  "prioridad": [
-    "Sofía Castro"
-  ],
+  "prioridad": [],
   "cobertura": {
     "LV": {
       "T1": {
