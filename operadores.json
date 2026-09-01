@@ -34,5 +34,17 @@
     "Costo Turno": 16,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Oscar Quispe",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 16,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
