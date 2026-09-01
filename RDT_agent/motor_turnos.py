@@ -742,6 +742,33 @@ def generar_rol(
                    obligatorio: bool = True) -> None:
             have = len(en_turno_rol(f, tn, pu))
 
+            # (0.5) reubicar DENTRO del mismo turno: si alguien ya está en este
+            #       turno cubriendo un rol que NO es obligatorio y puede cubrir
+            #       'pu', se le cambia de rol (no sale de su turno). Evita jalar
+            #       gente nueva o gastar horas extra.
+            if have < objetivo and obligatorio:
+                cand = [
+                    p for p in pers
+                    if parse_code(asig[p["id"]][f]["cod"]).get("turno") == tn
+                    and not asig[p["id"]][f].get("forzado")
+                    and not asig[p["id"]][f].get("manual")
+                    and p["_habil"].get(pu)
+                    and (asig[p["id"]][f].get("puestoCubierto")
+                         or rol_base(p)) != pu
+                    and cob[td][tn].get(
+                        asig[p["id"]][f].get("puestoCubierto") or rol_base(p),
+                        0) == 0
+                ]
+                cand.sort(key=lambda p: (prio_de(p), p["costo"]))
+                for p in cand:
+                    if have >= objetivo or pu in turno_info(f, tn)[1]:
+                        break
+                    a = asig[p["id"]][f]
+                    a["cod"] = (ABBR.get(pu, "?")) + TURNO_NUM[tn]
+                    a["puestoCubierto"] = pu
+                    a["reasignadoLateral"] = True
+                    have += 1
+
             # (1) gente en su semana de OI (o spill) — por jerarquía y luego costo.
             #     Vale para cualquier turno, T1 incluido. Excluye a los marcados
             #     "OI prioridad" (van al final, paso 4).
@@ -1034,8 +1061,14 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
         reg_turno = base if base in ("T1", "T2", "T3") else None
 
         if pc["tipo"] == "T" and pc.get("turno") == turno and cubierto_por == puesto:
-            motivo = ("✅ CUBRE este slot (jalado por OI prioridad)"
-                      if cell.get("oiPrioUsado") else "✅ CUBRE este slot")
+            if cell.get("fuera"):
+                motivo = "✅ CUBRE este slot (HORAS EXTRA, fuera de régimen)"
+            elif cell.get("oiPrioUsado"):
+                motivo = "✅ CUBRE este slot (jalado por OI prioridad)"
+            elif cell.get("reasignadoLateral"):
+                motivo = "✅ CUBRE este slot (reasignado a este rol dentro del turno)"
+            else:
+                motivo = "✅ CUBRE este slot"
         elif cell.get("ausencia"):
             lbl = TIPO_AUS.get(cell.get("ausTipo"), {}).get("label", "ausencia")
             motivo = f"ausente ({lbl}, {cell.get('ausencia')})"
