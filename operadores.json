@@ -1,19 +1,5 @@
 [
   {
-    "Nombre": "Carlos Pérez",
-    "Roles Habilitados": [
-      "C",
-      "ET",
-      "EF",
-      "A"
-    ],
-    "Semana Ciclo": 1,
-    "Puesto": "Coordinador",
-    "Costo Turno": 50,
-    "Fecha Base": "",
-    "Activo": true
-  },
-  {
     "Nombre": "Ana Gómez",
     "Roles Habilitados": [
       "ET",
