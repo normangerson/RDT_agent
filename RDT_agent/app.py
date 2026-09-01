@@ -167,12 +167,15 @@ _CELL_BG = {
 }
 
 
-_FUERA_BG = ("#fecaca", "#7f1d1d")  # fondo rojo claro para turnos fuera de régimen
+_FUERA_BG = ("#fecaca", "#7f1d1d")   # rojo claro: turno fuera de régimen
+_DFORZ_BG = ("#eef2ff", "#6366f1")   # índigo pálido: descanso impuesto por secuencia
 
 
-def _cell_style(v, fuera=False):
+def _cell_style(v, fuera=False, dforz=False):
   if fuera:
     bg, fg = _FUERA_BG
+  elif dforz:
+    bg, fg = _DFORZ_BG
   else:
     pc = mt.parse_code(str(v))
     if pc["tipo"] == "T":
@@ -724,10 +727,14 @@ with tab_rol:
         [[bool(rol["asig"][fila["id"]][f].get("fuera")) for f in g["fechas"]]
          for fila in g["filas"]],
         index=noms, columns=cols)
+    _dforz = pd.DataFrame(
+        [[bool(rol["asig"][fila["id"]][f].get("descansoForzado"))
+          for f in g["fechas"]] for fila in g["filas"]],
+        index=noms, columns=cols)
 
     def _estilos(df):
       return pd.DataFrame(
-          [[_cell_style(df.iat[i, j], _fuera.iat[i, j])
+          [[_cell_style(df.iat[i, j], _fuera.iat[i, j], _dforz.iat[i, j])
             for j in range(df.shape[1])] for i in range(df.shape[0])],
           index=df.index, columns=df.columns)
 
@@ -740,9 +747,10 @@ with tab_rol:
       st.dataframe(vista, use_container_width=True, height=_h)
     st.caption(
         "T1 23-07 (nocturno, empieza la víspera) · T2 07-15 · T3 15-23 · "
-        "OI oficina · D descanso · V/CP/PER/LM ausencias · **fondo rojo = "
-        "turno fuera de régimen (horas extra)**. Cabecera con * = feriado. "
-        "El prefijo del código es el rol (C/ET/EF/A)."
+        "OI oficina · D descanso · V/CP/PER/LM ausencias · **fondo rojo** = "
+        "turno fuera de régimen (horas extra) · **fondo índigo pálido** = "
+        "descanso impuesto porque el régimen encadenaba T3→T1. "
+        "Cabecera con * = feriado. El prefijo del código es el rol (C/ET/EF/A)."
     )
     st.download_button(
         "⬇️ Descargar CSV", grid.to_csv().encode("utf-8-sig"),

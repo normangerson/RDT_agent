@@ -615,6 +615,24 @@ def generar_rol(
             asig[pid][f]["cod"] = v
             asig[pid][f]["manual"] = True
 
+    # 2.5) reglas de secuencia sobre el régimen: si el régimen (o un forzado
+    #      de rango) deja dos turnos seguidos que NO pueden encadenarse
+    #      (p. ej. T3 el domingo y T1 el lunes), el segundo día pasa a
+    #      descanso. Es una regla dura: el motor nunca produce esa transición.
+    for p in pers:
+        for i in range(1, len(all_fechas)):
+            c0 = asig[p["id"]][all_fechas[i - 1]]
+            c1 = asig[p["id"]][all_fechas[i]]
+            if (c1.get("manual") or c1.get("forzado") or c1.get("ausencia")
+                    or c1["descansoSem"]):
+                continue  # sólo se corrige lo que viene del régimen
+            t0 = parse_code(c0["cod"]).get("turno")
+            t1 = parse_code(c1["cod"]).get("turno")
+            if t0 and t1 and (t0, t1) in proh:
+                c1["cod"] = "D"
+                c1["descansoForzado"] = True
+                c1.pop("spillOI", None)
+
     # ---- helpers dependientes de la asignación -------------------------------
     def turno_de(pid: str, f: str) -> str | None:
         cell = asig[pid].get(f)
@@ -781,6 +799,7 @@ def generar_rol(
                     p for p in pers
                     if parse_code(asig[p["id"]][f]["cod"])["tipo"] == "D"
                     and not asig[p["id"]][f].get("descansoSem")
+                    and not asig[p["id"]][f].get("descansoForzado")
                     and not asig[p["id"]][f].get("forzado")
                     and p["_habil"].get(pu)
                     and not viola_secuencia(p["id"], f, tn)
@@ -1022,6 +1041,9 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
             motivo = f"ausente ({lbl}, {cell.get('ausencia')})"
         elif dsem:
             motivo = "en su SEMANA DE DESCANSO (Lun–Dom intocable)"
+        elif cell.get("descansoForzado"):
+            motivo = (f"descanso impuesto: su régimen ese día era {base} pero "
+                      "el día anterior hacía T3 (T3→T1 no se puede encadenar)")
         elif cell.get("oiPerm"):
             motivo = "forzado a OI permanente (Lun–Vie)"
         elif cell.get("oiPrio") and pc["tipo"] == "OI":
