@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "Nombre": "Salvador Roca",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 2,
+    "Costo Turno": 16,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
+  }
+]
