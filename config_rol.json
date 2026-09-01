@@ -101,6 +101,11 @@
       "id": "f1",
       "tipo": "OI_PRIO",
       "personaId": "Oscar Quispe"
+    },
+    {
+      "id": "f2",
+      "tipo": "OI_PRIO",
+      "personaId": "Christian Barturen"
     }
   ],
   "prioridad": [
