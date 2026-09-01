@@ -214,5 +214,15 @@
     "Costo Turno": 6,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Joaquin Asto",
+    "Roles Habilitados": [
+      "A"
+    ],
+    "Semana Ciclo": 2,
+    "Costo Turno": 4,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
