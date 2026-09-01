@@ -60,6 +60,11 @@
       "id": "f1",
       "tipo": "OI_PERM",
       "personaId": "Christian Barturen"
+    },
+    {
+      "id": "f2",
+      "tipo": "OI_PERM",
+      "personaId": "Juan Puicon"
     }
   ],
   "prioridad": [
