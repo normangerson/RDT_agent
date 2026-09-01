@@ -55,6 +55,11 @@
       "id": "f0",
       "tipo": "OI_PERM",
       "personaId": "Henry Morales"
+    },
+    {
+      "id": "f1",
+      "tipo": "OI_PERM",
+      "personaId": "Christian Barturen"
     }
   ],
   "prioridad": [
