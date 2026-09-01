@@ -224,5 +224,15 @@
     "Costo Turno": 4,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Adrian Tacilla",
+    "Roles Habilitados": [
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 4,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
