@@ -96,6 +96,11 @@
       "id": "f0",
       "tipo": "OI_PRIO",
       "personaId": "Henry Morales"
+    },
+    {
+      "id": "f1",
+      "tipo": "OI_PRIO",
+      "personaId": "Oscar Quispe"
     }
   ],
   "prioridad": [
