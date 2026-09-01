@@ -581,15 +581,19 @@ with tab_ausencias:
 with tab_forzados:
   st.subheader("📌 Forzados")
   st.markdown(
-      "**OI permanente:** el operador hace OI de lunes a viernes; sábados y"
-      " domingos siguen el régimen (se respetan su semana de descanso y sus"
-      " ausencias).  ·  **Rango de días:** fija un código (D / OI / T1 / T2 /"
-      " T3) para ese operador en todo el rango — pisa el régimen, las ausencias"
-      " y la semana de descanso."
+      "**OI permanente:** hace OI de lunes a viernes y es **intocable** — nunca"
+      " cubre turnos entre semana.  ·  **OI prioridad:** hace OI de lunes a"
+      " viernes por defecto (deja su turno de régimen), pero el motor **sí"
+      " puede jalarlo** a un turno para cubrir un mínimo obligatorio si no hay"
+      " nadie más (último recurso, antes que dejar el hueco).  ·  **Rango de"
+      " días:** fija un código (D / OI / T1 / T2 / T3) en todo el rango — pisa"
+      " el régimen, las ausencias y la semana de descanso.  ·  Los tres"
+      " respetan sábados/domingos según el régimen (salvo el rango de días)."
   )
   c1, c2, c3 = st.columns([2, 2, 1])
   f_op = c1.selectbox("Operador", [o["Nombre"] for o in OPS], key="fz_op")
-  f_tipo = c2.selectbox("Tipo", ["OI permanente", "Rango de días"])
+  f_tipo = c2.selectbox("Tipo",
+                        ["OI permanente", "OI prioridad", "Rango de días"])
   if f_tipo == "Rango de días":
     d1, d2, d3 = st.columns(3)
     d1.date_input("Desde", format="YYYY-MM-DD", key="fz_desde")
@@ -599,9 +603,10 @@ with tab_forzados:
                  help="T1/T2/T3 llevan el prefijo del rol automáticamente")
   if c3.button("Agregar regla"):
     fz = CFG.setdefault("forzados", [])
-    if f_tipo == "OI permanente":
-      if not any(r["tipo"] == "OI_PERM" and r["personaId"] == f_op for r in fz):
-        fz.append({"id": f"f{len(fz)}", "tipo": "OI_PERM", "personaId": f_op})
+    _tipo = {"OI permanente": "OI_PERM", "OI prioridad": "OI_PRIO"}.get(f_tipo)
+    if _tipo:
+      if not any(r["tipo"] == _tipo and r["personaId"] == f_op for r in fz):
+        fz.append({"id": f"f{len(fz)}", "tipo": _tipo, "personaId": f_op})
     else:
       _des = st.session_state.get("fz_desde")
       _has = st.session_state.get("fz_hasta")
@@ -614,10 +619,12 @@ with tab_forzados:
     guardar_config(CFG)
     st.rerun()
 
+  _FZ_LBL = {"OI_PERM": "OI permanente (Lun–Vie, intocable)",
+             "OI_PRIO": "OI prioridad (Lun–Vie, comodín)"}
   for i, r in enumerate(list(CFG.get("forzados", []))):
     c1, c2 = st.columns([6, 0.5])
-    if r["tipo"] == "OI_PERM":
-      c1.markdown(f"**{r['personaId']}** · OI permanente (Lun–Vie)")
+    if r["tipo"] in _FZ_LBL:
+      c1.markdown(f"**{r['personaId']}** · {_FZ_LBL[r['tipo']]}")
     else:
       _d1 = r.get("desde") or r.get("fecha", "")
       _d2 = r.get("hasta") or r.get("fecha", "")

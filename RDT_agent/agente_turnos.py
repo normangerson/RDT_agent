@@ -320,8 +320,9 @@ def cargar_feriados_peru_2026() -> dict:
 
 def registrar_forzado_oi_permanente(operador: str) -> dict:
     """Fuerza a un operador a hacer OI (oficina) de lunes a viernes de forma
-    permanente. Sábados y domingos siguen su rol natural del régimen; se
-    respetan su semana de descanso y sus ausencias."""
+    permanente e INTOCABLE: nunca cubre turnos entre semana. Sábados y domingos
+    siguen su rol del régimen; se respetan su semana de descanso y sus ausencias.
+    """
     pid = _resolver_operador(operador)
     if not pid:
         return {"error": f"No encontré al operador '{operador}'."}
@@ -329,6 +330,22 @@ def registrar_forzado_oi_permanente(operador: str) -> dict:
     if any(r["tipo"] == "OI_PERM" and r["personaId"] == pid for r in fz):
         return {"error": "Ese operador ya tiene la regla OI permanente."}
     fz.append({"id": _nuevo_id("f"), "tipo": "OI_PERM", "personaId": pid})
+    return {"ok": True, "nota": "Vuelve a llamar a generar_rol para ver el efecto."}
+
+
+def registrar_forzado_oi_prioridad(operador: str) -> dict:
+    """Marca a un operador como "OI prioridad": hace OI de lunes a viernes por
+    defecto (deja su turno de régimen), pero el motor SÍ puede jalarlo a un
+    turno para cubrir un mínimo obligatorio si no hay nadie más — es un comodín
+    de último recurso, antes que dejar un hueco. Fines de semana según régimen;
+    se respetan su semana de descanso y sus ausencias."""
+    pid = _resolver_operador(operador)
+    if not pid:
+        return {"error": f"No encontré al operador '{operador}'."}
+    fz = CTX.config.setdefault("forzados", [])
+    if any(r["tipo"] == "OI_PRIO" and r["personaId"] == pid for r in fz):
+        return {"error": "Ese operador ya tiene la regla OI prioridad."}
+    fz.append({"id": _nuevo_id("f"), "tipo": "OI_PRIO", "personaId": pid})
     return {"ok": True, "nota": "Vuelve a llamar a generar_rol para ver el efecto."}
 
 
@@ -422,6 +439,7 @@ TOOLS = [
     registrar_feriado,
     cargar_feriados_peru_2026,
     registrar_forzado_oi_permanente,
+    registrar_forzado_oi_prioridad,
     registrar_forzado_dia,
     quitar_forzados,
     fijar_cobertura,
@@ -456,7 +474,9 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
   turnos. Única transición prohibida: T3 (termina 23:00) seguido de T1 al día
   siguiente (arranca esa misma hora).
 - Ausencias (VAC/CAP/PER/MED) y feriados.
-- Forzados: OI permanente (Lun-Vie) o un código fijo en un día o rango de días.
+- Forzados: OI permanente (Lun-Vie, intocable) · OI prioridad (Lun-Vie pero
+  jalable como último recurso para un mínimo obligatorio) · código fijo en un
+  día o rango de días.
 - Jerarquía de roles: C > ET > EF > A. La POSICIÓN del operador en el módulo
   (el orden de la lista, el nº 1 es el de mayor jerarquía) decide quién se
   lleva el rol más alto: si hay que repartir p. ej. EF y A entre dos personas,

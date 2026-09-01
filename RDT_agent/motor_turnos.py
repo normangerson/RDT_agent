@@ -10,8 +10,8 @@ RDTLightning). Aquí vive todo lo que **da criterios** a la construcción del ro
     la víspera -> 07:00). Única transición prohibida: T3 -> T1 al día siguiente.
   * Semana de descanso "intocable" (Lun-Dom).
   * Ausencias (vacaciones / capacitación / permiso / licencia médica).
-  * Forzados (OI permanente de lunes a viernes, o un código fijo en un rango
-    de días).
+  * Forzados: OI permanente (Lun-Vie, intocable) · OI prioridad (Lun-Vie pero
+    jalable como último recurso) · código fijo en un rango de días.
   * Prioridad / jerarquía entre operadores.
   * Requerimientos de cobertura por turno y tipo de día, con reglas duras
     (máx. 4 personas por turno, 1 por puesto) y objetivo blando de 1 de cada rol.
@@ -567,18 +567,24 @@ def generar_rol(
         per = by_id.get(r["personaId"])
         if a is None or per is None:
             continue
-        if r["tipo"] == "OI_PERM":
+        if r["tipo"] in ("OI_PERM", "OI_PRIO"):
+            # OI_PERM: hace OI de Lun a Vie y es INTOCABLE (nunca cubre turnos).
+            # OI_PRIO: hace OI de Lun a Vie por defecto (deja su turno de
+            #          régimen), pero el motor SÍ puede jalarlo a un turno para
+            #          cubrir un hueco obligatorio si no hay nadie mejor.
             for f in all_fechas:
                 cell = a.get(f)
                 if not cell or cell.get("ausencia") or cell["descansoSem"]:
                     continue
-                dow = _js_dow(_parse(f))
-                if dow in (0, 6):
+                if _js_dow(_parse(f)) in (0, 6):
                     continue  # fin de semana: régimen natural
                 cell["cod"] = "OI"
-                cell["forzado"] = True
-                cell["oiPerm"] = True
                 cell.pop("spillOI", None)
+                if r["tipo"] == "OI_PERM":
+                    cell["forzado"] = True
+                    cell["oiPerm"] = True
+                else:
+                    cell["oiPrio"] = True
         elif r["tipo"] == "DIA":
             # acepta un día (`fecha`) o un rango (`desde`/`hasta`)
             desde = r.get("desde") or r.get("fecha")
@@ -714,17 +720,20 @@ def generar_rol(
                 return (cob[td][c["turno"]].get(rol, 0)) == 0
             return False
 
-        def llenar(tn: str, pu: str, objetivo: int, extra: bool) -> None:
+        def llenar(tn: str, pu: str, objetivo: int, extra: bool,
+                   obligatorio: bool = True) -> None:
             have = len(en_turno_rol(f, tn, pu))
 
             # (1) gente en su semana de OI (o spill) — por jerarquía y luego costo.
-            #     Vale para cualquier turno, T1 incluido.
+            #     Vale para cualquier turno, T1 incluido. Excluye a los marcados
+            #     "OI prioridad" (van al final, paso 4).
             if have < objetivo and optimizar_oi:
                 cand = [
                     p for p in pers
                     if parse_code(asig[p["id"]][f]["cod"])["tipo"] == "OI"
                     and not asig[p["id"]][f].get("descansoSem")
                     and not asig[p["id"]][f].get("forzado")
+                    and not asig[p["id"]][f].get("oiPrio")
                     and p["_habil"].get(pu)
                     and not viola_secuencia(p["id"], f, tn)
                 ]
@@ -789,19 +798,44 @@ def generar_rol(
                     a["puestoCubierto"] = pu
                     have += 1
 
+            # (4) OI PRIORIDAD: personas marcadas "OI prioridad" — último recurso,
+            #     sólo para cubrir un mínimo obligatorio.
+            if have < objetivo and obligatorio and optimizar_oi:
+                cand = [
+                    p for p in pers
+                    if asig[p["id"]][f].get("oiPrio")
+                    and parse_code(asig[p["id"]][f]["cod"])["tipo"] == "OI"
+                    and not asig[p["id"]][f].get("descansoSem")
+                    and p["_habil"].get(pu)
+                    and not viola_secuencia(p["id"], f, tn)
+                ]
+                cand.sort(key=lambda p: (prio_de(p), p["costo"]))
+                for p in cand:
+                    if have >= objetivo:
+                        break
+                    cnt, roles = turno_info(f, tn)
+                    if cnt >= MAX_TURNO or pu in roles:
+                        break
+                    a = asig[p["id"]][f]
+                    a["cod"] = (ABBR.get(pu, "?")) + TURNO_NUM[tn]
+                    a["puestoCubierto"] = pu
+                    a["oiPrioUsado"] = True
+                    have += 1
+
         # PASO A: todos los mínimos >= 1 son OBLIGATORIOS -> cubrir con lo que
         #         haga falta (OI y, si no alcanza, horas extra).
         for tn in PRIO_TURNO:
             for pu in JERARQUIA:
                 req = cob[td][tn].get(pu, 0)
                 if req > 0:
-                    llenar(tn, pu, req, extra=cubrir_con_descanso)
+                    llenar(tn, pu, req, extra=cubrir_con_descanso,
+                           obligatorio=True)
         # PASO B: objetivo blando donde el mínimo es 0 -> intentar 1 sólo con
-        #         gente de OI (sin horas extra, sin marcar error).
+        #         gente de OI (sin horas extra, sin OI-prioridad, sin error).
         for tn in PRIO_TURNO:
             for pu in JERARQUIA:
                 if cob[td][tn].get(pu, 0) == 0:
-                    llenar(tn, pu, 1, extra=False)
+                    llenar(tn, pu, 1, extra=False, obligatorio=False)
 
         # PASO C: intercambios por jerarquía dentro de cada turno. Si alguien de
         #         mayor jerarquía cubre un rol más bajo que otro de menor
@@ -981,7 +1015,8 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
         reg_turno = base if base in ("T1", "T2", "T3") else None
 
         if pc["tipo"] == "T" and pc.get("turno") == turno and cubierto_por == puesto:
-            motivo = "✅ CUBRE este slot"
+            motivo = ("✅ CUBRE este slot (jalado por OI prioridad)"
+                      if cell.get("oiPrioUsado") else "✅ CUBRE este slot")
         elif cell.get("ausencia"):
             lbl = TIPO_AUS.get(cell.get("ausTipo"), {}).get("label", "ausencia")
             motivo = f"ausente ({lbl}, {cell.get('ausencia')})"
@@ -989,6 +1024,9 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
             motivo = "en su SEMANA DE DESCANSO (Lun–Dom intocable)"
         elif cell.get("oiPerm"):
             motivo = "forzado a OI permanente (Lun–Vie)"
+        elif cell.get("oiPrio") and pc["tipo"] == "OI":
+            motivo = ("OI prioridad: hace oficina por defecto; el motor sólo lo "
+                      "jala a un turno si no hay nadie más para un mínimo obligatorio")
         elif cell.get("forzado"):
             motivo = f"forzado a {cell['cod']}"
         elif pc["tipo"] == "T" and pc.get("turno") == turno:
