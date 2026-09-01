@@ -1,17 +1,5 @@
 [
   {
-    "Nombre": "Jorge Díaz",
-    "Roles Habilitados": [
-      "C",
-      "ET"
-    ],
-    "Semana Ciclo": 5,
-    "Puesto": "Coordinador",
-    "Costo Turno": 50,
-    "Fecha Base": "",
-    "Activo": true
-  },
-  {
     "Nombre": "Sofía Castro",
     "Roles Habilitados": [
       "EF",
