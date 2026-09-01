@@ -1,1 +1,71 @@
-[]
+[
+  {
+    "Nombre": "Carlos Pérez",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Ana Gómez",
+    "Roles Habilitados": [
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 2,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Luis Torres",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 3,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "María Ruiz",
+    "Roles Habilitados": [
+      "A"
+    ],
+    "Semana Ciclo": 4,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Jorge Díaz",
+    "Roles Habilitados": [
+      "C",
+      "ET"
+    ],
+    "Semana Ciclo": 5,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Sofía Castro",
+    "Roles Habilitados": [
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  }
+]
