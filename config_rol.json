@@ -106,6 +106,11 @@
       "id": "f2",
       "tipo": "OI_PRIO",
       "personaId": "Christian Barturen"
+    },
+    {
+      "id": "f3",
+      "tipo": "OI_PRIO",
+      "personaId": "Juan Puicon"
     }
   ],
   "prioridad": [
