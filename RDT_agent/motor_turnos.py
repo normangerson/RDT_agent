@@ -5,8 +5,8 @@ RDTLightning). Aquí vive todo lo que **da criterios** a la construcción del ro
 
   * Régimen rotativo de 5 semanas (editable) anclado por operador
     (fecha base = un lunes + semana del ciclo en esa fecha).
-  * Reglas de secuencia: descanso mínimo entre turnos -> transiciones
-    prohibidas, y máximo de turnos nocturnos (T1) consecutivos.
+  * Reglas de secuencia (fijas): 1 turno por día y descanso mínimo de 8 h
+    entre turnos -> única transición prohibida al día siguiente: T1 -> T2.
   * Semana de descanso "intocable" (Lun-Dom).
   * Ausencias (vacaciones / capacitación / permiso / licencia médica).
   * Forzados (OI permanente de lunes a viernes, o día puntual).
@@ -91,6 +91,11 @@ TURNO_H = {
     "T3": {"ini": 15, "fin": 23},
 }
 TURNO_NUM = {"T1": "1", "T2": "2", "T3": "3"}
+
+# Reglas de secuencia (fijas): 1 turno por día y descanso mínimo entre turnos
+# de 8 horas (= la duración de un turno). Con 8 h, la única transición que
+# queda prohibida al día siguiente es T1 -> T2 (0 h de descanso).
+DESCANSO_MIN_HORAS = 8
 
 DIA_TIPO = [
     ("LV", "Lunes a viernes"),
@@ -206,12 +211,11 @@ def config_default() -> dict:
             "nSem": 5,
             "bloqueDow": 1,  # cada semana del ciclo inicia el lunes
             "patron": patron_default(),
-            # Reglas fijas: 1 turno por día y descanso mínimo suficiente para
-            # dejar un turno libre entre turnos (de ahí salen las transiciones
-            # prohibidas al día siguiente: T1->T2, T1->T3, T3->T2).
+            # Reglas fijas: 1 turno por día y descanso mínimo de 8 h entre turnos.
+            # Con 8 h la única transición prohibida al día siguiente es T1->T2.
             "reglas": {
                 "unoPorDia": True,
-                "minDescansoHoras": 12,
+                "minDescansoHoras": DESCANSO_MIN_HORAS,
             },
         },
         "feriados": [],          # [{fecha, nombre}]
@@ -491,8 +495,9 @@ def generar_rol(
     n_sem = int(reg.get("nSem", 5))
     bd = int(reg.get("bloqueDow", 1))
     patron = reg["patron"]
-    reglas = reg.get("reglas", {})
-    min_h = int(reglas.get("minDescansoHoras", 12))
+    # Regla fija: descanso mínimo de 8 h (se ignora lo que traiga el config
+    # guardado, para no arrastrar valores viejos).
+    min_h = DESCANSO_MIN_HORAS
 
     cob = config["cobertura"]
     ui = config.get("ui", {})

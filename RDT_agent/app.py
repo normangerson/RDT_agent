@@ -488,9 +488,11 @@ with tab_regimen:
       " fecha base y su semana del ciclo. Códigos: **OI** oficina · **T2**"
       " 07-15 · **T3** 15-23 · **T1** 23-07 · **D** descanso."
   )
+  _proh = ", ".join(f"{a}→{b}" for a, b in mt.prohibidas(mt.DESCANSO_MIN_HORAS))
   st.caption(
-      "Reglas de secuencia (fijas): 1 turno por día y descanso mínimo entre"
-      " turnos → no se encadena T1→T2, T1→T3 ni T3→T2 al día siguiente."
+      f"Reglas de secuencia (fijas): 1 turno por día y descanso mínimo de "
+      f"{mt.DESCANSO_MIN_HORAS} h entre turnos → transición prohibida al día "
+      f"siguiente: {_proh or 'ninguna'}."
   )
   patron = CFG["regimen"]["patron"]
   dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]

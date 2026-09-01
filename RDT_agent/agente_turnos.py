@@ -135,8 +135,8 @@ def fijar_anclaje(operador: str, fecha_base: str = "", semana_ciclo: int = 0) ->
 
 def consultar_regimen() -> dict:
     """Devuelve el régimen rotativo vigente (patrón de 5 semanas, Lun..Dom),
-    las reglas de secuencia (descanso mínimo entre turnos, máximo de T1
-    consecutivos) y los requisitos de cobertura por tipo de día y turno."""
+    las reglas de secuencia (1 turno/día, descanso mínimo de 8 h) y los
+    requisitos de cobertura por tipo de día y turno."""
     reg = CTX.config["regimen"]
     patron = reg["patron"]
     n = reg["nSem"]
@@ -448,8 +448,8 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
   Para revisar cómo queda cada operador usa `verificar_anclaje`.
   Códigos: OI oficina · T1 23-07 · T2 07-15 · T3 15-23 · D.
 - La semana de descanso (Lun-Dom) es intocable: el motor nunca la usa.
-- Reglas de secuencia fijas: 1 turno por día y descanso mínimo entre turnos, lo
-  que prohíbe encadenar T1->T2, T1->T3 y T3->T2 al día siguiente.
+- Reglas de secuencia fijas: 1 turno por día y descanso mínimo de 8 h entre
+  turnos, lo que prohíbe encadenar T1->T2 al día siguiente.
 - Ausencias (VAC/CAP/PER/MED) y feriados.
 - Forzados: OI permanente (Lun-Vie) o día puntual.
 - Jerarquía de roles: C > ET > EF > A. La POSICIÓN del operador en el módulo

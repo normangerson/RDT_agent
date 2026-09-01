@@ -25,8 +25,8 @@ resultado, pero no inventa la grilla.
 - **Régimen rotativo de 5 semanas** editable, anclado por operador
   (fecha base = un lunes + semana del ciclo en esa fecha).
 - **Semana de descanso intocable** (Lun–Dom): el motor nunca la usa para cubrir.
-- **Reglas de secuencia** (fijas): 1 turno por día y descanso mínimo entre
-  turnos → no se encadena T1→T2, T1→T3 ni T3→T2 al día siguiente.
+- **Reglas de secuencia** (fijas): 1 turno por día y descanso mínimo de 8 h
+  entre turnos → única transición prohibida al día siguiente: T1→T2.
 - **Ausencias:** vacaciones / capacitación / permiso / licencia médica, con
   estado aprobada/solicitada.
 - **Feriados:** cambian el tipo de día y activan la sobretasa.
