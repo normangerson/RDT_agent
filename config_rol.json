@@ -54,6 +54,14 @@
       "desde": "2026-09-01",
       "hasta": "2026-09-06",
       "estado": "Aprobada"
+    },
+    {
+      "id": "a1_Ivan Unda",
+      "personaId": "Ivan Unda",
+      "tipo": "VAC",
+      "desde": "2026-09-01",
+      "hasta": "2026-09-06",
+      "estado": "Aprobada"
     }
   ],
   "ausenciasCfg": {
