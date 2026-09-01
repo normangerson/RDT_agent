@@ -137,5 +137,15 @@
     "Costo Turno": 10,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Norman Rodriguez",
+    "Roles Habilitados": [
+      "EF"
+    ],
+    "Semana Ciclo": 3,
+    "Costo Turno": 10,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
