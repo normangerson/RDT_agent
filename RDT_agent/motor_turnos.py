@@ -146,13 +146,32 @@ def _month_list(ym: str, extra: int) -> list[str]:
 
 
 def _lunes_ref(mes_oficial: str) -> str:
-    m1 = _parse(mes_oficial + "-01")
+    """Lunes de (o anterior a) el día 1 del mes oficial."""
+    m1 = _parse((mes_oficial or "2026-08")[:7] + "-01")
     return _ymd(_add_days(m1, -(((m1.isoweekday() - 1) + 7) % 7)))
 
 
 def _lunes_de(fecha: str) -> str:
+    """Ajusta cualquier fecha 'YYYY-MM-DD' al lunes de esa semana."""
     d = _parse(fecha)
     return _ymd(_add_days(d, -(((d.isoweekday() - 1) + 7) % 7)))
+
+
+def es_lunes(fecha: str) -> bool:
+    try:
+        return _parse(fecha).isoweekday() == 1
+    except Exception:
+        return False
+
+
+def _lunes_de_safe(fecha) -> str | None:
+    """Como _lunes_de pero tolerante: None si la fecha es vacía o inválida."""
+    if not fecha:
+        return None
+    try:
+        return _lunes_de(str(fecha)[:10])
+    except Exception:
+        return None
 
 
 # --------------------------------------------------------------------------- #
@@ -278,6 +297,10 @@ def _norm_operador(op: dict, lunes_ref: str) -> dict:
             habil[full] = True
 
     puesto = op.get("Puesto") or op.get("Puesto Principal")
+    try:
+        sb = int(op.get("Semana Ciclo", op.get("semanaBase", 1)) or 1)
+    except (TypeError, ValueError):
+        sb = 1
     rec = {
         "id": str(op.get("id") or op.get("Nombre") or "").strip(),
         "nombre": op.get("Nombre", "—"),
@@ -285,14 +308,15 @@ def _norm_operador(op: dict, lunes_ref: str) -> dict:
         "_puesto": puesto,
         "_habil": habil,
         "costo": int(op.get("Costo Turno", op.get("costo", 50)) or 50),
-        "fecha_base": op.get("Fecha Base") or op.get("fechaBase") or lunes_ref,
-        "semana_base": int(op.get("Semana Ciclo", op.get("semanaBase", 1)) or 1),
+        # fecha base = un lunes. Si viene vacía o inválida -> lunes de referencia.
+        # Si no cae en lunes, se ajusta al lunes de esa semana.
+        "fecha_base": _lunes_de_safe(op.get("Fecha Base") or op.get("fechaBase"))
+                      or _lunes_de_safe(lunes_ref) or lunes_ref,
+        "semana_base": sb,
         "activo": bool(op.get("Activo", op.get("activo", True))),
     }
     if not rec["_habil"]:
         rec["_habil"] = habil_default(rol_base(rec))
-    # la fecha base siempre a un lunes
-    rec["fecha_base"] = _lunes_de(rec["fecha_base"])
     return rec
 
 
@@ -398,6 +422,51 @@ def sinc_prioridad(prioridad: list[str], pers: list[dict]) -> list[str]:
     faltan.sort(key=lambda p: (_rol_rank(rol_base(p)), (p["nombre"] or "").lower()))
     orden.extend(p["id"] for p in faltan)
     return orden
+
+
+# --------------------------------------------------------------------------- #
+#  Anclaje del ciclo (fecha base lunes + semana base)                          #
+# --------------------------------------------------------------------------- #
+
+def anclaje(operadores: list[dict], config: dict,
+            mes_oficial: str | None = None) -> dict:
+    """Explica cómo queda anclado cada operador en el ciclo.
+
+    Para cada operador devuelve:
+      * ``fecha_base_ingresada`` — lo que se guardó (o vacío).
+      * ``era_lunes`` — si el valor ingresado ya caía en lunes.
+      * ``lunes_base`` — el lunes efectivo que usa el motor (ajustado).
+      * ``semana_base`` — la semana del ciclo declarada para ese lunes.
+      * ``semana_en_1er_lunes`` — en qué semana del ciclo (1..N) cae ese
+        operador el primer lunes del mes oficial, propagando el régimen.
+      * ``turno_1er_lunes`` — el código de régimen ese lunes (OI/T1/T2/T3/D).
+
+    Sirve para verificar a ojo que el rol arranca donde debe.
+    """
+    reg = config["regimen"]
+    n_sem = int(reg.get("nSem", 5))
+    bd = int(reg.get("bloqueDow", 1))
+    patron = reg["patron"]
+    mes_oficial = mes_oficial or config.get("ui", {}).get("mesOficial", "2026-08")
+    lref = _lunes_ref(mes_oficial)
+
+    filas = []
+    for o in operadores:
+        activo = bool(o.get("Activo", o.get("activo", True)))
+        p = _norm_operador(o, lref)
+        ingresada = str(o.get("Fecha Base") or o.get("fechaBase") or "").strip()
+        base, fase, _ds = _codigo_regimen(p, lref, n_sem, bd, patron)
+        filas.append({
+            "operador": p["nombre"],
+            "activo": activo,
+            "fecha_base_ingresada": ingresada or "(vacía)",
+            "era_lunes": es_lunes(ingresada) if ingresada else None,
+            "lunes_base": p["fecha_base"],
+            "semana_base": p["semana_base"],
+            "semana_en_1er_lunes": fase + 1,
+            "turno_1er_lunes": base,
+        })
+    return {"primer_lunes_mes_oficial": lref, "operadores": filas}
 
 
 # --------------------------------------------------------------------------- #

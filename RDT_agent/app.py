@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import pandas as pd
@@ -236,6 +237,13 @@ with tab_equipo:
       " Especialista Frecuencia · **A** Analista.  ·  El **orden** de la lista"
       " es la jerarquía (el nº 1 manda al repartir roles)."
   )
+  st.info(
+      "**Anclaje del ciclo:** el motor calcula la rotación de cada operador a"
+      " partir de dos datos — la **fecha base** (un lunes concreto) y la"
+      " **semana del ciclo** en la que estaba ese lunes. Ej.: «el lunes"
+      " 2026-07-27 este operador estaba en la semana 3». Si dejas la fecha"
+      " vacía, se usa el lunes anterior al día 1 del mes oficial."
+  )
 
   # --- Alta / edición: arriba y a todo lo ancho ---------------------------- #
   with st.container(border=True):
@@ -245,6 +253,12 @@ with tab_equipo:
     editando = None if sel.startswith("➕") else next(
         o for o in OPS if o["Nombre"] == sel)
 
+    _fb_prev = None
+    if editando:
+      _snap = mt._lunes_de_safe(editando.get("Fecha Base"))
+      if _snap:
+        _fb_prev = datetime.date.fromisoformat(_snap)
+
     with st.form("form_operador", clear_on_submit=(editando is None), border=False):
       r1 = st.columns([3, 2, 2, 1.4])
       nombre = r1[0].text_input("Nombre", value=editando["Nombre"] if editando else "")
@@ -253,24 +267,35 @@ with tab_equipo:
           index=mt.CARGOS.index(editando["Puesto"])
           if editando and editando.get("Puesto") in mt.CARGOS else 3)
       semana = r1[2].selectbox(
-          "Semana del ciclo", [1, 2, 3, 4, 5],
-          index=(editando.get("Semana Ciclo", 1) - 1) if editando else 0,
+          "Semana del ciclo en la fecha base", [1, 2, 3, 4, 5],
+          index=(int(editando.get("Semana Ciclo", 1)) - 1) if editando else 0,
           format_func=lambda s: f"S{s} · {mt.SEM_NOMBRE[s]}")
       costo = r1[3].number_input(
           "Costo/turno", 1, 100,
           int(editando.get("Costo Turno", 50)) if editando else 50)
 
       hab = editando.get("Roles Habilitados", []) if editando else ["A"]
-      r2 = st.columns([1, 1, 1, 1, 2, 1])
+      r2 = st.columns([0.9, 0.9, 0.9, 0.9, 2.4, 1])
       rol_c = r2[0].checkbox("C", "C" in hab, help="Coordinador")
       rol_et = r2[1].checkbox("ET", "ET" in hab, help="Especialista Tensión")
       rol_ef = r2[2].checkbox("EF", "EF" in hab, help="Especialista Frecuencia")
       rol_a = r2[3].checkbox("A", ("A" in hab) or (editando is None), help="Analista")
-      fecha_base = r2[4].text_input(
-          "Fecha base (lunes, opcional)",
-          value=editando.get("Fecha Base", "") if editando else "")
+      fecha_base = r2[4].date_input(
+          "Fecha base (se ajusta al lunes)", value=_fb_prev,
+          format="YYYY-MM-DD",
+          help="Cualquier día vale: se usa el lunes de esa semana. "
+               "Vacío = lunes anterior al día 1 del mes oficial.")
       activo = r2[5].checkbox(
           "Activo", editando.get("Activo", True) if editando else True)
+
+      if fecha_base:
+        _lb = mt._lunes_de(fecha_base.isoformat())
+        _av = "" if fecha_base.isoformat() == _lb else \
+            f"  ·  {fecha_base.isoformat()} no es lunes → se usa {_lb}"
+        st.caption(f"⚓ Ancla: lunes **{_lb}** = semana **{semana}** del ciclo{_av}")
+      else:
+        st.caption("⚓ Sin fecha base: ancla en el lunes anterior al día 1 del "
+                   "mes oficial, con la semana del ciclo indicada.")
 
       ok = st.form_submit_button(
           "Guardar operador" if editando else "Crear operador", type="primary")
@@ -278,13 +303,14 @@ with tab_equipo:
     if ok and nombre:
       roles = [r for r, v in
                (("C", rol_c), ("ET", rol_et), ("EF", rol_ef), ("A", rol_a)) if v]
+      fb = mt._lunes_de(fecha_base.isoformat()) if fecha_base else ""
       rec = {
           "Nombre": nombre,
           "Roles Habilitados": roles or ["A"],
-          "Semana Ciclo": semana,
+          "Semana Ciclo": int(semana),
           "Puesto": puesto,
           "Costo Turno": int(costo),
-          "Fecha Base": fecha_base.strip(),
+          "Fecha Base": fb,
           "Activo": activo,
       }
       if editando:
@@ -292,7 +318,8 @@ with tab_equipo:
       else:
         OPS.append(rec)
       guardar_operadores(OPS)
-      st.success(f"{nombre} guardado.")
+      st.success(f"{nombre} guardado."
+                 + (f" Ancla: {fb} (semana {semana})." if fb else ""))
       st.rerun()
 
   # --- Lista ------------------------------------------------------------- #
@@ -322,6 +349,27 @@ with tab_equipo:
       OPS.pop(idx)
       guardar_operadores(OPS)
       st.rerun()
+
+  # --- Verificación del anclaje del ciclo ------------------------------- #
+  with st.expander("🔎 Verificar anclaje del ciclo", expanded=False):
+    anc = mt.anclaje(OPS, CFG)
+    st.caption(
+        f"Primer lunes del mes oficial ({CFG['ui'].get('mesOficial')}): "
+        f"**{anc['primer_lunes_mes_oficial']}**. Revisa que «Sem. en 1er lunes» "
+        "sea la semana del ciclo que esperas para cada operador esa fecha."
+    )
+    dfa = pd.DataFrame([{
+        "Operador": r["operador"],
+        "Fecha base": r["fecha_base_ingresada"],
+        "¿Era lunes?": "—" if r["era_lunes"] is None
+        else ("sí" if r["era_lunes"] else "NO ⚠"),
+        "Lunes efectivo": r["lunes_base"],
+        "Sem. base": r["semana_base"],
+        "Sem. en 1er lunes": r["semana_en_1er_lunes"],
+        "Turno ese lunes": r["turno_1er_lunes"],
+        "Activo": "sí" if r["activo"] else "no",
+    } for r in anc["operadores"]])
+    st.dataframe(dfa, use_container_width=True, hide_index=True)
 
   CFG["prioridad"] = [o["Nombre"] for o in OPS]
   guardar_config(CFG)

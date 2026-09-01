@@ -85,11 +85,53 @@ def consultar_operadores() -> list[dict]:
             "puesto": o.get("Puesto", "(sin definir)"),
             "roles_habilitados": o.get("Roles Habilitados", []),
             "semana_ciclo": o.get("Semana Ciclo", 1),
+            "fecha_base": o.get("Fecha Base") or "(lunes de referencia)",
             "costo_turno": o.get("Costo Turno", 50),
             "activo": o.get("Activo", True),
         }
         for o in CTX.operadores
     ]
+
+
+def verificar_anclaje(mes_oficial: str = "") -> dict:
+    """Muestra cómo queda anclado cada operador en el ciclo rotativo: su lunes
+    base efectivo, la semana del ciclo declarada y en qué semana del ciclo cae
+    el primer lunes del mes oficial. Úsalo para revisar que el rol arranca
+    donde debe o si el usuario pregunta por qué un operador rota como rota."""
+    return mt.anclaje(CTX.operadores, CTX.config, mes_oficial or None)
+
+
+def fijar_anclaje(operador: str, fecha_base: str = "", semana_ciclo: int = 0) -> dict:
+    """Ajusta el anclaje de un operador en el ciclo.
+
+    Args:
+        operador: nombre del operador.
+        fecha_base: un lunes "YYYY-MM-DD" (si no es lunes se ajusta al lunes de
+            esa semana). Vacío = no cambiar.
+        semana_ciclo: 1..5, la semana del ciclo en la que estaba ese lunes.
+            0 = no cambiar.
+    """
+    n = _fold(operador)
+    op = next((o for o in CTX.operadores if _fold(o.get("Nombre", "")) == n), None)
+    if op is None:
+        op = next((o for o in CTX.operadores
+                   if n and n in _fold(o.get("Nombre", ""))), None)
+    if op is None:
+        return {"error": f"No encontré al operador '{operador}'."}
+    if fecha_base:
+        lun = mt._lunes_de_safe(fecha_base)
+        if not lun:
+            return {"error": f"Fecha inválida: '{fecha_base}'."}
+        op["Fecha Base"] = lun
+    if semana_ciclo:
+        if not 1 <= int(semana_ciclo) <= 5:
+            return {"error": "semana_ciclo debe estar entre 1 y 5."}
+        op["Semana Ciclo"] = int(semana_ciclo)
+    return {"ok": True,
+            "operador": op["Nombre"],
+            "fecha_base": op.get("Fecha Base", "(lunes de referencia)"),
+            "semana_ciclo": op.get("Semana Ciclo", 1),
+            "nota": "Vuelve a llamar a generar_rol para ver el efecto."}
 
 
 def consultar_regimen() -> dict:
@@ -347,6 +389,8 @@ def mover_prioridad(operador: str, direccion: str) -> dict:
 TOOLS = [
     consultar_operadores,
     consultar_regimen,
+    verificar_anclaje,
+    fijar_anclaje,
     generar_rol,
     calcular_costos,
     registrar_ausencia,
@@ -376,8 +420,12 @@ prioridad de alguien), primero llama a la herramienta correspondiente y luego
 vuelve a llamar a `generar_rol`.
 
 CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
-- Régimen rotativo de 5 semanas, anclado por operador (fecha base = un lunes +
-  semana del ciclo). Códigos: OI oficina · T1 23-07 · T2 07-15 · T3 15-23 · D.
+- Régimen rotativo de 5 semanas, anclado por operador: cada uno tiene una
+  FECHA BASE (un lunes concreto) y la SEMANA DEL CICLO en la que estaba ese
+  lunes; desde ahí el motor propaga la rotación. Si el usuario dice cosas como
+  «el lunes 27 de julio Fulano estaba en la semana 3», usa `fijar_anclaje`.
+  Para revisar cómo queda cada operador usa `verificar_anclaje`.
+  Códigos: OI oficina · T1 23-07 · T2 07-15 · T3 15-23 · D.
 - La semana de descanso (Lun-Dom) es intocable: el motor nunca la usa.
 - Reglas de secuencia fijas: 1 turno por día y descanso mínimo entre turnos, lo
   que prohíbe encadenar T1->T2, T1->T3 y T3->T2 al día siguiente.
