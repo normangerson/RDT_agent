@@ -51,10 +51,7 @@
     "bloqPend": true
   },
   "forzados": [],
-  "prioridad": [
-    "Jorge Díaz",
-    "Sofía Castro"
-  ],
+  "prioridad": [],
   "cobertura": {
     "LV": {
       "T1": {
