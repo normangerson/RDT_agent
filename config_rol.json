@@ -93,11 +93,6 @@
   },
   "forzados": [
     {
-      "id": "f1",
-      "tipo": "OI_PERM",
-      "personaId": "Christian Barturen"
-    },
-    {
       "id": "f3",
       "tipo": "OI_PERM",
       "personaId": "Oscar Quispe"
