@@ -50,7 +50,13 @@
   "ausenciasCfg": {
     "bloqPend": true
   },
-  "forzados": [],
+  "forzados": [
+    {
+      "id": "f0",
+      "tipo": "OI_PERM",
+      "personaId": "Henry Morales"
+    }
+  ],
   "prioridad": [
     "Salvador Roca",
     "Angel Ticona",
