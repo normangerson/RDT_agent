@@ -868,7 +868,9 @@ def generar_rol(
         "meses": meses,
         "operadores": [
             {"id": p["id"], "nombre": p["nombre"], "dni": p["dni"],
-             "puesto": p.get("_puesto") or rol_base(p), "rol_base": rol_base(p)}
+             "puesto": p.get("_puesto") or rol_base(p), "rol_base": rol_base(p),
+             "habil": sorted(k for k, v in p["_habil"].items() if v),
+             "fecha_base": p["fecha_base"], "semana_base": p["semana_base"]}
             for p in pers
         ],
         "asig": asig,
@@ -877,6 +879,111 @@ def generar_rol(
         "errores": errores,
         "feriados": sorted(fer_set),
         "prioridad": prioridad,
+    }
+
+
+# --------------------------------------------------------------------------- #
+#  Diagnóstico: ¿por qué (no) hay X en el turno Y el día Z?                     #
+# --------------------------------------------------------------------------- #
+
+def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
+                     puesto: str) -> dict:
+    """Explica, operador por operador, por qué un puesto está o no cubierto en
+    un turno concreto de un día concreto del rol ya generado."""
+    turno = turno.upper()
+    if puesto not in PUESTOS:
+        # aceptar abreviaturas
+        puesto = ABBR_INV.get(puesto.upper(), puesto)
+    reg = config["regimen"]
+    n_sem = int(reg.get("nSem", 5))
+    bd = int(reg.get("bloqueDow", 1))
+    patron = reg["patron"]
+    fer_set = set(rol.get("feriados", []))
+    td = tipo_dia(fecha, fer_set)
+    req = config["cobertura"].get(td, {}).get(turno, {}).get(puesto, 0)
+    resumen_slot = rol["cobertura"].get(fecha, {}).get(turno, {}).get(puesto, {})
+    have = resumen_slot.get("have", 0)
+    tolerable = (puesto == PRIO_PUESTO[-1]) or (turno == PRIO_TURNO[-1])
+
+    filas = []
+    for op in rol["operadores"]:
+        if puesto not in op.get("habil", []):
+            continue
+        cell = rol["asig"].get(op["id"], {}).get(fecha)
+        if not cell:
+            continue
+        base, fase, dsem = _codigo_regimen(
+            {"fecha_base": op["fecha_base"], "semana_base": op["semana_base"]},
+            fecha, n_sem, bd, patron)
+        pc = parse_code(cell["cod"])
+        cubierto_por = cell.get("puestoCubierto") or op["rol_base"]
+        reg_turno = base if base in ("T1", "T2", "T3") else None
+
+        if pc["tipo"] == "T" and pc.get("turno") == turno and cubierto_por == puesto:
+            motivo = "✅ CUBRE este slot"
+        elif cell.get("ausencia"):
+            lbl = TIPO_AUS.get(cell.get("ausTipo"), {}).get("label", "ausencia")
+            motivo = f"ausente ({lbl}, {cell.get('ausencia')})"
+        elif dsem:
+            motivo = "en su SEMANA DE DESCANSO (Lun–Dom intocable)"
+        elif cell.get("oiPerm"):
+            motivo = "forzado a OI permanente (Lun–Vie)"
+        elif cell.get("forzado"):
+            motivo = f"forzado a {cell['cod']}"
+        elif pc["tipo"] == "T" and pc.get("turno") == turno:
+            motivo = (f"está en {turno} cubriendo {cubierto_por} "
+                      f"(excedente de {puesto} → demotado)")
+        elif reg_turno == turno and cell.get("spillOI"):
+            motivo = (f"el régimen lo puso en {turno} pero el puesto {puesto} "
+                      "ya estaba cubierto por alguien de mayor jerarquía → pasó a OI")
+        elif pc["tipo"] == "T":
+            if reg_turno == pc["turno"]:
+                motivo = f"el régimen lo tiene en {pc['turno']} ese día"
+            else:
+                origen = {"OI": "OI", "D": "descanso"}.get(base, base)
+                motivo = f"cubriendo {pc['turno']} (su régimen ese día era {origen})"
+        elif pc["tipo"] == "OI":
+            motivo = ("en OI — el motor no pasa a nadie de OI al turno T1"
+                      if turno == "T1"
+                      else "en OI, disponible (no se necesitó o hay prioridad mayor)")
+        elif pc["tipo"] == "D":
+            motivo = "en descanso ese día — sólo entraría con horas extra"
+            if tolerable:
+                motivo += " (para T1/EF hay que autorizarlas)"
+        else:
+            motivo = cell["cod"]
+
+        filas.append({
+            "operador": op["nombre"],
+            "roles": op["habil"],
+            "regimen_semana": fase + 1,
+            "regimen_turno": base,
+            "codigo_final": cell["cod"],
+            "motivo": motivo,
+        })
+
+    nota = None
+    if tolerable:
+        nota = (f"{turno if turno == 'T1' else ''}"
+                f"{' y ' if turno == 'T1' and puesto == 'Especialista Frecuencia' else ''}"
+                f"{'Especialista Frecuencia' if puesto == 'Especialista Frecuencia' else ''}"
+                " es de PRIORIDAD BAJA: el motor no usa personal de OI ni horas"
+                " extra para cubrirlo. Si el régimen no pone a nadie con ese rol"
+                " ese día, el hueco queda como advertencia (▲), no como"
+                " incumplimiento. Actívalo con «horas extra en T1 y Esp."
+                " Frecuencia» o ajusta el régimen / el anclaje.")
+
+    return {
+        "fecha": fecha,
+        "dia": DIAS[_js_dow(_parse(fecha))],
+        "tipo_dia": td,
+        "turno": turno,
+        "puesto": puesto,
+        "requerido": req,
+        "asignados": have,
+        "cumple": have >= req,
+        "candidatos": filas,
+        "nota": nota,
     }
 
 

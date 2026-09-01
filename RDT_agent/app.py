@@ -675,6 +675,35 @@ with tab_rol:
         for t in res["detalle_advertencias"]:
           st.markdown(f"- {t}")
 
+    with st.expander("🔎 ¿Por qué (no) hay cobertura en un turno?"):
+      d1, d2, d3 = st.columns(3)
+      dfecha = d1.selectbox("Día", g["fechas"], key="diag_f",
+                            format_func=lambda f: f"{mt.DIAS[mt._js_dow(mt._parse(f))]} "
+                            f"{mt._parse(f).day}")
+      dturno = d2.selectbox("Turno", ["T1", "T2", "T3"], key="diag_t")
+      dpuesto = d3.selectbox("Puesto", mt.PUESTOS, key="diag_p",
+                             index=1)
+      dg = mt.diagnostico_slot(rol, CFG, dfecha, dturno, dpuesto)
+      estado = "✅ cubierto" if dg["cumple"] else (
+          "▲ sin cubrir (prioridad baja)" if (dturno == "T1"
+          or dpuesto == "Especialista Frecuencia") else "✕ sin cubrir")
+      st.markdown(
+          f"**{dg['dia']} {mt._parse(dfecha).day}** · {dturno} · {dpuesto} "
+          f"({dg['tipo_dia']}) — requerido {dg['requerido']}, "
+          f"asignados {dg['asignados']} → {estado}")
+      if dg["candidatos"]:
+        st.dataframe(pd.DataFrame([{
+            "Operador": r["operador"],
+            "Roles": " ".join(mt.ABBR[x] for x in r["roles"]),
+            "Régimen": f"S{r['regimen_semana']} · {r['regimen_turno']}",
+            "Código final": r["codigo_final"],
+            "Motivo": r["motivo"],
+        } for r in dg["candidatos"]]), use_container_width=True, hide_index=True)
+      else:
+        st.info(f"Ningún operador tiene **{dpuesto}** entre sus roles habilitados.")
+      if dg["nota"]:
+        st.caption(dg["nota"])
+
 # ===================== AGENTE (CHAT) ================================= #
 with tab_chat:
   st.markdown("### 💬 Interacción con el agente")

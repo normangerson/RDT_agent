@@ -227,6 +227,26 @@ def calcular_costos() -> dict:
     return mt.calcular_costos(CTX.ultimo_rol, CTX.operadores, CTX.config["costos"])
 
 
+def diagnosticar_slot(fecha: str, turno: str, puesto: str) -> dict:
+    """Explica por qué un puesto está o no cubierto en un turno de un día
+    concreto del último rol generado: lista a cada operador con ese rol
+    habilitado y el motivo por el que ese día cubre o no (régimen, ausencia,
+    semana de descanso, forzado, demote, en OI, en descanso...).
+
+    Úsalo cuando el usuario pregunte «¿por qué no hay X en el turno Y el día Z?».
+
+    Args:
+        fecha: "YYYY-MM-DD".
+        turno: "T1", "T2" o "T3".
+        puesto: "Coordinador", "Especialista Tensión", "Especialista Frecuencia",
+            "Analista" (o su abreviatura C/ET/EF/A).
+    """
+    if not CTX.ultimo_rol:
+        return {"error": "Primero genera el rol con generar_rol."}
+    return mt.diagnostico_slot(CTX.ultimo_rol, CTX.config, fecha,
+                               turno, puesto)
+
+
 # --------------------------------------------------------------------------- #
 #  Herramientas que ajustan los criterios                                      #
 # --------------------------------------------------------------------------- #
@@ -392,6 +412,7 @@ TOOLS = [
     fijar_anclaje,
     generar_rol,
     calcular_costos,
+    diagnosticar_slot,
     registrar_ausencia,
     eliminar_ausencia,
     registrar_feriado,
