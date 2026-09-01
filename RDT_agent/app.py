@@ -157,9 +157,9 @@ def _build_id():
   return "local"
 
 
-# --- Coloreado de la grilla como en RDTLightning ------------------------- #
+# --- Coloreado de la grilla (celdas claras, texto oscuro) --------------- #
 _CELL_BG = {
-    "T1": ("#64748b", "#ffffff"), "T2": ("#e0f2fe", "#075985"),
+    "T1": ("#e0e7ff", "#3730a3"), "T2": ("#e0f2fe", "#075985"),
     "T3": ("#fef3c7", "#92400e"), "OI": ("#f1f5f9", "#475569"),
     "D": ("#ffffff", "#cbd5e1"), "V": ("#f3e8ff", "#6b21a8"),
     "CP": ("#dcfce7", "#166534"), "PER": ("#ffedd5", "#9a3412"),
@@ -696,7 +696,12 @@ with tab_rol:
       vista = grid.style.map(_cell_style)
     except AttributeError:  # pandas < 2.1
       vista = grid.style.applymap(_cell_style)
-    st.dataframe(vista, use_container_width=True, height=min(60 + 35 * len(grid), 720))
+    _rh = 22  # alto de fila compacto
+    _h = min(34 + _rh * len(grid), 760)
+    try:
+      st.dataframe(vista, use_container_width=True, height=_h, row_height=_rh)
+    except TypeError:  # Streamlit sin row_height
+      st.dataframe(vista, use_container_width=True, height=_h)
     st.caption(
         "T1 23-07 · T2 07-15 · T3 15-23 · OI oficina · D descanso · "
         "V/CP/PER/LM ausencias. Cabecera con * = feriado. "
