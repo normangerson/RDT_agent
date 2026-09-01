@@ -775,6 +775,40 @@ def generar_rol(
                 if cob[td][tn].get(pu, 0) == 0:
                     llenar(tn, pu, 1, extra=False)
 
+        # PASO C: intercambios por jerarquía dentro de cada turno. Si alguien de
+        #         mayor jerarquía cubre un rol más bajo que otro de menor
+        #         jerarquía del mismo turno, y ambos pueden cubrir el rol del
+        #         otro, se intercambian (el senior se queda el rol más alto).
+        for tn in ("T1", "T2", "T3"):
+            for _ in range(len(pers)):  # tope de iteraciones
+                hecho = False
+                en_tn = [p for p in pers
+                         if parse_code(asig[p["id"]][f]["cod"]).get("turno") == tn
+                         and not asig[p["id"]][f].get("forzado")
+                         and not asig[p["id"]][f].get("manual")]
+                for pa in en_tn:
+                    ra = asig[pa["id"]][f].get("puestoCubierto") or rol_base(pa)
+                    if ra not in JERARQUIA:
+                        continue
+                    for pb in en_tn:
+                        rb = asig[pb["id"]][f].get("puestoCubierto") or rol_base(pb)
+                        if rb not in JERARQUIA or pa is pb:
+                            continue
+                        if (prio_de(pa) < prio_de(pb)
+                                and JERARQUIA.index(ra) > JERARQUIA.index(rb)
+                                and pa["_habil"].get(rb)
+                                and pb["_habil"].get(ra)):
+                            asig[pa["id"]][f]["cod"] = ABBR[rb] + TURNO_NUM[tn]
+                            asig[pa["id"]][f]["puestoCubierto"] = rb
+                            asig[pb["id"]][f]["cod"] = ABBR[ra] + TURNO_NUM[tn]
+                            asig[pb["id"]][f]["puestoCubierto"] = ra
+                            hecho = True
+                            break
+                    if hecho:
+                        break
+                if not hecho:
+                    break
+
         # registrar cobertura y déficits (todo mínimo incumplido = incumplimiento)
         for tn in PRIO_TURNO:
             cob_resumen[f][tn] = {}
