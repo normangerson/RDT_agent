@@ -9,7 +9,8 @@ RDTLightning). Aquí vive todo lo que **da criterios** a la construcción del ro
     entre turnos -> única transición prohibida al día siguiente: T1 -> T2.
   * Semana de descanso "intocable" (Lun-Dom).
   * Ausencias (vacaciones / capacitación / permiso / licencia médica).
-  * Forzados (OI permanente de lunes a viernes, o día puntual).
+  * Forzados (OI permanente de lunes a viernes, o un código fijo en un rango
+    de días).
   * Prioridad / jerarquía entre operadores.
   * Requerimientos de cobertura por turno y tipo de día, con reglas duras
     (máx. 4 personas por turno, 1 por puesto) y objetivo blando de 1 de cada rol.
@@ -573,17 +574,28 @@ def generar_rol(
                 cell["forzado"] = True
                 cell["oiPerm"] = True
                 cell.pop("spillOI", None)
-        elif r["tipo"] == "DIA" and r.get("fecha"):
-            cell = a.get(r["fecha"])
-            if not cell:
+        elif r["tipo"] == "DIA":
+            # acepta un día (`fecha`) o un rango (`desde`/`hasta`)
+            desde = r.get("desde") or r.get("fecha")
+            hasta = r.get("hasta") or r.get("fecha") or desde
+            if not desde:
                 continue
             c = r.get("cod") or "OI"
             if c in ("T1", "T2", "T3"):
                 c = (ABBR.get(rol_base(per), "?")) + TURNO_NUM[c]
-            cell["cod"] = c
-            cell["forzado"] = True
-            cell.pop("ausencia", None)
-            cell.pop("spillOI", None)
+            try:
+                x, h = _parse(desde), _parse(hasta)
+            except Exception:
+                continue
+            while x <= h:
+                cell = a.get(_ymd(x))
+                x = _add_days(x, 1)
+                if not cell:
+                    continue
+                cell["cod"] = c
+                cell["forzado"] = True
+                cell.pop("ausencia", None)
+                cell.pop("spillOI", None)
 
     # 2) overrides manuales -----------------------------------------------------
     for k, v in config.get("overrides", {}).items():

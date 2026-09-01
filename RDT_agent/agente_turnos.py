@@ -331,21 +331,23 @@ def registrar_forzado_oi_permanente(operador: str) -> dict:
     return {"ok": True, "nota": "Vuelve a llamar a generar_rol para ver el efecto."}
 
 
-def registrar_forzado_dia(operador: str, fecha: str, codigo: str) -> dict:
-    """Forza un código en un día puntual para un operador.
+def registrar_forzado_dia(operador: str, codigo: str, desde: str,
+                          hasta: str = "") -> dict:
+    """Forza un código para un operador en un día o en un rango de días.
 
     Args:
         operador: nombre del operador.
-        fecha: "YYYY-MM-DD".
         codigo: "D", "OI", "T1", "T2" o "T3" (el prefijo del rol se añade solo),
             o un código completo tipo "ET2".
+        desde: fecha inicial "YYYY-MM-DD".
+        hasta: fecha final "YYYY-MM-DD" (vacío = un solo día).
     """
     pid = _resolver_operador(operador)
     if not pid:
         return {"error": f"No encontré al operador '{operador}'."}
     fz = CTX.config.setdefault("forzados", [])
     fz.append({"id": _nuevo_id("f"), "tipo": "DIA", "personaId": pid,
-               "fecha": fecha, "cod": codigo.upper()})
+               "desde": desde, "hasta": hasta or desde, "cod": codigo.upper()})
     return {"ok": True, "nota": "Vuelve a llamar a generar_rol para ver el efecto."}
 
 
@@ -451,7 +453,7 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
 - Reglas de secuencia fijas: 1 turno por día y descanso mínimo de 8 h entre
   turnos, lo que prohíbe encadenar T1->T2 al día siguiente.
 - Ausencias (VAC/CAP/PER/MED) y feriados.
-- Forzados: OI permanente (Lun-Vie) o día puntual.
+- Forzados: OI permanente (Lun-Vie) o un código fijo en un día o rango de días.
 - Jerarquía de roles: C > ET > EF > A. La POSICIÓN del operador en el módulo
   (el orden de la lista, el nº 1 es el de mayor jerarquía) decide quién se
   lleva el rol más alto: si hay que repartir p. ej. EF y A entre dos personas,
