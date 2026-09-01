@@ -179,17 +179,18 @@ def _lunes_de_safe(fecha) -> str | None:
 # --------------------------------------------------------------------------- #
 
 def patron_default() -> list[str]:
-    """Régimen natural de 5 semanas del Centro de Control (Lun..Dom por fila).
+    """Régimen rotativo de 5 semanas (Lun..Dom por fila).
 
-    Es el mismo patrón que mostraba RDT_agent en su pestaña de régimen; ahora es
-    editable desde la configuración.
+    Patrón uniforme por semana (una semana entera en cada turno). Es editable
+    desde la pestaña Régimen. Se elige uniforme por defecto porque no genera
+    transiciones prohibidas entre días ni al cambiar de semana.
     """
     semanas = [
-        ["OI", "OI", "OI", "OI", "OI", "T2", "D"],   # semana 1
-        ["T2", "T2", "T2", "T1", "T2", "T3", "T3"],   # semana 2
-        ["T3", "T3", "T3", "T3", "D", "T2", "D"],     # semana 3
-        ["T1", "T1", "T1", "T2", "T1", "T1", "T1"],   # semana 4
-        ["D", "D", "D", "D", "D", "D", "D"],          # semana 5 (descanso)
+        ["OI", "OI", "OI", "OI", "OI", "OI", "OI"],   # semana 1 · oficina
+        ["T2", "T2", "T2", "T2", "T2", "T2", "T2"],   # semana 2 · turno 2
+        ["T3", "T3", "T3", "T3", "T3", "T3", "T3"],   # semana 3 · turno 3
+        ["T1", "T1", "T1", "T1", "T1", "T1", "T1"],   # semana 4 · turno 1
+        ["D", "D", "D", "D", "D", "D", "D"],          # semana 5 · descanso
     ]
     return [c for wk in semanas for c in wk]
 
@@ -684,13 +685,12 @@ def generar_rol(
                 return (cob[td][c["turno"]].get(rol, 0)) == 0
             return False
 
-        def llenar(tn: str, pu: str, objetivo: int, extra: bool,
-                   obligatorio: bool) -> None:
+        def llenar(tn: str, pu: str, objetivo: int, extra: bool) -> None:
             have = len(en_turno_rol(f, tn, pu))
 
             # (1) gente en su semana de OI (o spill) — por jerarquía y luego costo.
-            #     Para T1 sólo se recurre a OI si el slot es obligatorio.
-            if have < objetivo and optimizar_oi and (tn != "T1" or obligatorio):
+            #     Vale para cualquier turno, T1 incluido.
+            if have < objetivo and optimizar_oi:
                 cand = [
                     p for p in pers
                     if parse_code(asig[p["id"]][f]["cod"])["tipo"] == "OI"
@@ -766,13 +766,13 @@ def generar_rol(
             for pu in PRIO_PUESTO:
                 req = cob[td][tn].get(pu, 0)
                 if req > 0:
-                    llenar(tn, pu, req, extra=cubrir_con_descanso, obligatorio=True)
+                    llenar(tn, pu, req, extra=cubrir_con_descanso)
         # PASO B: objetivo blando donde el mínimo es 0 -> intentar 1 sólo con
-        #         gente de OI, sin horas extra y sin marcar error.
+        #         gente de OI (sin horas extra, sin marcar error).
         for tn in PRIO_TURNO:
             for pu in PRIO_PUESTO:
                 if cob[td][tn].get(pu, 0) == 0:
-                    llenar(tn, pu, 1, extra=False, obligatorio=False)
+                    llenar(tn, pu, 1, extra=False)
 
         # registrar cobertura y déficits (todo mínimo incumplido = incumplimiento)
         for tn in PRIO_TURNO:
@@ -941,11 +941,7 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
                 origen = {"OI": "OI", "D": "descanso"}.get(base, base)
                 motivo = f"cubriendo {pc['turno']} (su régimen ese día era {origen})"
         elif pc["tipo"] == "OI":
-            if not obligatorio and turno == "T1":
-                motivo = ("en OI — a T1 sólo se recurre a personal de OI si el "
-                          "mínimo del módulo de cobertura es ≥ 1")
-            else:
-                motivo = "en OI, disponible (no se necesitó o hay prioridad mayor)"
+            motivo = "en OI, disponible (no se necesitó o hay prioridad mayor)"
         elif pc["tipo"] == "D":
             motivo = "en descanso ese día"
             motivo += (" — el motor sólo lo usaría con horas extra si el slot es"
