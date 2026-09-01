@@ -62,6 +62,14 @@
       "desde": "2026-09-01",
       "hasta": "2026-09-06",
       "estado": "Aprobada"
+    },
+    {
+      "id": "a2_Joaquin Asto",
+      "personaId": "Joaquin Asto",
+      "tipo": "VAC",
+      "desde": "2026-09-01",
+      "hasta": "2026-09-05",
+      "estado": "Aprobada"
     }
   ],
   "ausenciasCfg": {
