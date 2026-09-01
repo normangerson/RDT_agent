@@ -78,6 +78,14 @@
       "desde": "2026-09-04",
       "hasta": "2026-09-13",
       "estado": "Aprobada"
+    },
+    {
+      "id": "a4_Magnum Carbajal",
+      "personaId": "Magnum Carbajal",
+      "tipo": "VAC",
+      "desde": "2026-09-16",
+      "hasta": "2026-09-24",
+      "estado": "Aprobada"
     }
   ],
   "ausenciasCfg": {
