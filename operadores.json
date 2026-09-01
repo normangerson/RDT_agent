@@ -81,5 +81,16 @@
     "Costo Turno": 16,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Alex Villa",
+    "Roles Habilitados": [
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 4,
+    "Costo Turno": 13,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
