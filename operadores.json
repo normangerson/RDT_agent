@@ -1,18 +1,5 @@
 [
   {
-    "Nombre": "Ana Gómez",
-    "Roles Habilitados": [
-      "ET",
-      "EF",
-      "A"
-    ],
-    "Semana Ciclo": 2,
-    "Puesto": "Especialista",
-    "Costo Turno": 50,
-    "Fecha Base": "",
-    "Activo": true
-  },
-  {
     "Nombre": "Luis Torres",
     "Roles Habilitados": [
       "EF",
