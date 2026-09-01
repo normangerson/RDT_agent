@@ -114,5 +114,17 @@
     "Costo Turno": 14,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Pool Tasayco",
+    "Roles Habilitados": [
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 4,
+    "Costo Turno": 11,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
