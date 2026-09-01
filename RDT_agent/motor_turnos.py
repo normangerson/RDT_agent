@@ -673,6 +673,7 @@ def generar_rol(
                     sobra -= 1
 
         def prescindible(p: dict) -> bool:
+            """¿Se le puede mover a otro turno sin romper nada importante?"""
             a = asig[p["id"]][f]
             if (a.get("forzado") or a.get("manual") or a.get("fuera")
                     or a.get("descansoSem") or a.get("oiPerm")):
@@ -681,8 +682,13 @@ def generar_rol(
                 return True
             c = parse_code(a["cod"])
             if c["tipo"] == "T":
+                # Respetar el régimen: si está en el turno que le toca por
+                # régimen, NO se le mueve para tapar otro turno.
+                if a["base"] == c["turno"]:
+                    return False
                 rol = a.get("puestoCubierto") or rol_base(p)
-                # cubre un slot que NO es obligatorio -> se puede mover a uno que sí
+                # está fuera de su turno de régimen y cubriendo un slot no
+                # obligatorio -> se puede reubicar en uno que sí lo sea.
                 return (cob[td][c["turno"]].get(rol, 0)) == 0
             return False
 
