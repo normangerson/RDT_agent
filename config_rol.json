@@ -46,7 +46,16 @@
     }
   },
   "feriados": [],
-  "ausencias": [],
+  "ausencias": [
+    {
+      "id": "a0_Renzo Chavez",
+      "personaId": "Renzo Chavez",
+      "tipo": "VAC",
+      "desde": "2026-09-01",
+      "hasta": "2026-09-06",
+      "estado": "Aprobada"
+    }
+  ],
   "ausenciasCfg": {
     "bloqPend": true
   },
