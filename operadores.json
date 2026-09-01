@@ -1,1 +1,63 @@
-[]
+[
+  {
+    "Nombre": "Ana Gómez",
+    "Roles Habilitados": [
+      "ET",
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 2,
+    "Puesto": "Especialista",
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Luis Torres",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 3,
+    "Puesto": "Especialista Jr",
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "María Ruiz",
+    "Roles Habilitados": [
+      "A"
+    ],
+    "Semana Ciclo": 4,
+    "Puesto": "Analista",
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Jorge Díaz",
+    "Roles Habilitados": [
+      "C",
+      "ET"
+    ],
+    "Semana Ciclo": 5,
+    "Puesto": "Coordinador",
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  },
+  {
+    "Nombre": "Sofía Castro",
+    "Roles Habilitados": [
+      "EF",
+      "ET",
+      "A"
+    ],
+    "Semana Ciclo": 1,
+    "Puesto": "Especialista",
+    "Costo Turno": 50,
+    "Fecha Base": "",
+    "Activo": true
+  }
+]
