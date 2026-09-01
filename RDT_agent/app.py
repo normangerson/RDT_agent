@@ -307,9 +307,10 @@ with st.sidebar:
 with tab_equipo:
   st.subheader("Operadores del Centro de Control")
   st.markdown(
-      "**Roles:** **C** Coordinador · **ET** Especialista Tensión · **EF**"
-      " Especialista Frecuencia · **A** Analista.  ·  El **orden** de la lista"
-      " es la jerarquía (el nº 1 manda al repartir roles)."
+      "**Jerarquía de roles: C › ET › EF › A.**  ·  El **orden de la lista** es"
+      " la jerarquía entre operadores (el nº 1 es el de mayor jerarquía):"
+      " cuando hay que repartir p. ej. EF y A entre dos personas, el de más"
+      " arriba se lleva EF. Reordénalos con ▲▼."
   )
   st.info(
       "**Anclaje del ciclo:** el motor calcula la rotación de cada operador a"
@@ -583,7 +584,9 @@ with tab_forzados:
   st.markdown("---")
   st.subheader("🧮 Prioridad / jerarquía")
   st.markdown(
-      "Se edita reordenando la lista en la pestaña **Operadores**. Orden actual:")
+      "El nº 1 tiene la mayor jerarquía. Ante un reparto (p. ej. quién hace EF"
+      " y quién A), el de más arriba se lleva el rol más alto (C › ET › EF › A)."
+      " Se edita reordenando la lista en la pestaña **Operadores**. Orden actual:")
   st.markdown("  →  ".join(
       f"{i+1}. {n}" for i, n in enumerate(o["Nombre"] for o in OPS)))
 

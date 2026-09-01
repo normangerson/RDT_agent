@@ -60,7 +60,12 @@ ABBR_INV = {v: k for k, v in ABBR.items()}
 # Especialista Tensión y Especialista Frecuencia rotan juntos (2 por turno)
 FAMILIA = {"Especialista Tensión": "ESP", "Especialista Frecuencia": "ESP"}
 
-# jerarquía "natural" de roles (para inferir el rol base de un operador)
+# Jerarquía de roles: C > ET > EF > A. Se usa para todo —
+#   * inferir el rol base de un operador,
+#   * ORDEN de asignación: se llena primero el rol más alto y se le da al
+#     operador de mayor jerarquía (posición en el módulo de operadores) que lo
+#     pueda cubrir. Ej.: si hay que repartir EF y A entre dos personas, el de
+#     mayor jerarquía se lleva EF.
 JERARQUIA = [
     "Coordinador",
     "Especialista Tensión",
@@ -68,13 +73,7 @@ JERARQUIA = [
     "Analista",
 ]
 
-# prioridad para repartir personal escaso (primero = más crítico)
-PRIO_PUESTO = [
-    "Coordinador",
-    "Especialista Tensión",
-    "Analista",
-    "Especialista Frecuencia",
-]
+# Orden de turnos cuando el personal no alcanza para cubrir todo (T1 cede antes).
 PRIO_TURNO = ["T2", "T3", "T1"]
 
 TIPO_AUS = {
@@ -409,7 +408,7 @@ def tipo_dia(fecha: str, fer_set: set[str]) -> str:
 
 def _rol_rank(rol: str) -> int:
     try:
-        return PRIO_PUESTO.index(rol)
+        return JERARQUIA.index(rol)
     except ValueError:
         return 99
 
@@ -630,8 +629,10 @@ def generar_rol(
     #    motor recurre a lo que haga falta para cumplirlo (personal en OI y,
     #    si no alcanza, horas extra de personal en descanso). Los mínimos en 0
     #    son sólo un objetivo blando (se intenta 1 con gente de OI, sin error).
-    #    PRIO_TURNO / PRIO_PUESTO sólo deciden el ORDEN en que se reparte el
-    #    personal escaso cuando no se puede cubrir todo.
+    #    Se asigna en orden de JERARQUIA de roles (C, ET, EF, A): para cada rol
+    #    se elige al operador de mayor jerarquía (posición en el módulo de
+    #    operadores) que lo pueda cubrir. PRIO_TURNO decide qué turno cede
+    #    cuando el personal no alcanza.
     cob_resumen: dict[str, dict] = {}
     for f in all_fechas:
         td = tipo_dia(f, fer_set)
@@ -652,7 +653,7 @@ def generar_rol(
                     if sobra <= 0:
                         break
                     lateral = None
-                    for pu2 in PRIO_PUESTO:
+                    for pu2 in JERARQUIA:
                         if pu2 == pu or not p["_habil"].get(pu2):
                             continue
                         obj2 = max(cob[td][tn].get(pu2, 0), 1)
@@ -763,21 +764,21 @@ def generar_rol(
         # PASO A: todos los mínimos >= 1 son OBLIGATORIOS -> cubrir con lo que
         #         haga falta (OI y, si no alcanza, horas extra).
         for tn in PRIO_TURNO:
-            for pu in PRIO_PUESTO:
+            for pu in JERARQUIA:
                 req = cob[td][tn].get(pu, 0)
                 if req > 0:
                     llenar(tn, pu, req, extra=cubrir_con_descanso)
         # PASO B: objetivo blando donde el mínimo es 0 -> intentar 1 sólo con
         #         gente de OI (sin horas extra, sin marcar error).
         for tn in PRIO_TURNO:
-            for pu in PRIO_PUESTO:
+            for pu in JERARQUIA:
                 if cob[td][tn].get(pu, 0) == 0:
                     llenar(tn, pu, 1, extra=False)
 
         # registrar cobertura y déficits (todo mínimo incumplido = incumplimiento)
         for tn in PRIO_TURNO:
             cob_resumen[f][tn] = {}
-            for pu in PRIO_PUESTO:
+            for pu in JERARQUIA:
                 req = cob[td][tn].get(pu, 0)
                 have = len(en_turno_rol(f, tn, pu))
                 cob_resumen[f][tn][pu] = {"req": req, "have": have,

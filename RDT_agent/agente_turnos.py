@@ -452,17 +452,20 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
   que prohíbe encadenar T1->T2, T1->T3 y T3->T2 al día siguiente.
 - Ausencias (VAC/CAP/PER/MED) y feriados.
 - Forzados: OI permanente (Lun-Vie) o día puntual.
-- Prioridad entre operadores: el nº 1 de la lista manda al repartir roles.
+- Jerarquía de roles: C > ET > EF > A. La POSICIÓN del operador en el módulo
+  (el orden de la lista, el nº 1 es el de mayor jerarquía) decide quién se
+  lleva el rol más alto: si hay que repartir p. ej. EF y A entre dos personas,
+  el de mayor jerarquía se lleva EF. Ajústala con `mover_prioridad`.
 - Cobertura por turno y tipo de día. El módulo de cobertura ES la definición de
-  prioridad: cada mínimo >= 1 es OBLIGATORIO (para cualquier puesto y turno,
-  incluido T1) y el motor recurre a régimen -> personal en OI -> horas extra de
-  personal en descanso hasta cumplirlo; si no lo logra es un incumplimiento (X).
-  Un mínimo en 0 es sólo un objetivo blando (se intenta 1 con gente de OI, sin
-  error si falta). Reglas duras: máx. 4 personas por turno y 1 por puesto.
+  qué es obligatorio: cada mínimo >= 1 es OBLIGATORIO (para cualquier puesto y
+  turno, incluido T1) y el motor recurre a régimen -> personal en OI -> horas
+  extra de personal en descanso hasta cumplirlo; si no lo logra es un
+  incumplimiento (X). Un mínimo en 0 es sólo un objetivo blando (se intenta 1
+  con gente de OI, sin error si falta). Reglas duras: máx. 4 personas por
+  turno y 1 por puesto.
 - Reparto del personal escaso: 1º gente en OI, 2º reasignar a quien cubre un
   slot no obligatorio, 3º horas extra (personal en descanso, fuera de régimen,
-  con sobretasa). PRIO de puestos (C > ET > Analista > EF) y turnos
-  (T2 > T3 > T1) sólo desempatan cuando no se puede cubrir todo.
+  con sobretasa). Cuando no se puede cubrir todo, T1 cede antes que T2/T3.
 
 ROLES: C Coordinador · ET Especialista Tensión · EF Especialista Frecuencia ·
 A Analista. En la grilla el prefijo del código es el rol (p. ej. ET2 = Esp.
