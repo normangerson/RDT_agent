@@ -192,5 +192,16 @@
     "Costo Turno": 6,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Alfredo Bellido",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 3,
+    "Costo Turno": 6,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
