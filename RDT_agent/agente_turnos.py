@@ -212,7 +212,8 @@ def generar_rol(
         "detalle_incumplimientos": res["detalle_incumplimientos"],
         "detalle_advertencias": res["detalle_advertencias"],
         "carga_por_operador": res["por_operador"],
-        "leyenda": "OI=oficina · T1=23-07 · T2=07-15 · T3=15-23 · D=descanso · "
+        "leyenda": "OI=oficina · T1=23-07 (nocturno, empieza la víspera) · "
+                   "T2=07-15 · T3=15-23 · D=descanso · "
                    "V/CP/PER/LM=ausencias · el prefijo es el rol (C/ET/EF/A). "
                    "Un '*' en la cabecera marca feriado.",
     }
@@ -448,10 +449,12 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
   lunes; desde ahí el motor propaga la rotación. Si el usuario dice cosas como
   «el lunes 27 de julio Fulano estaba en la semana 3», usa `fijar_anclaje`.
   Para revisar cómo queda cada operador usa `verificar_anclaje`.
-  Códigos: OI oficina · T1 23-07 · T2 07-15 · T3 15-23 · D.
+  Códigos: OI oficina · T1 23:00-07:00 (nocturno; el T1 rotulado en un día
+  empieza a las 23:00 de la VÍSPERA) · T2 07-15 · T3 15-23 · D.
 - La semana de descanso (Lun-Dom) es intocable: el motor nunca la usa.
 - Reglas de secuencia fijas: 1 turno por día y descanso mínimo de 8 h entre
-  turnos, lo que prohíbe encadenar T1->T2 al día siguiente.
+  turnos. Única transición prohibida: T3 (termina 23:00) seguido de T1 al día
+  siguiente (arranca esa misma hora).
 - Ausencias (VAC/CAP/PER/MED) y feriados.
 - Forzados: OI permanente (Lun-Vie) o un código fijo en un día o rango de días.
 - Jerarquía de roles: C > ET > EF > A. La POSICIÓN del operador en el módulo

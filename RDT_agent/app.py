@@ -486,7 +486,8 @@ with tab_regimen:
   st.markdown(
       "Patrón estándar de rotación. El motor lo rota para cada operador según su"
       " fecha base y su semana del ciclo. Códigos: **OI** oficina · **T2**"
-      " 07-15 · **T3** 15-23 · **T1** 23-07 · **D** descanso."
+      " 07-15 · **T3** 15-23 · **T1** 23-07 (nocturno; el T1 de un día arranca"
+      " a las 23:00 de la **víspera**) · **D** descanso."
   )
   _proh = ", ".join(f"{a}→{b}" for a, b in mt.prohibidas(mt.DESCANSO_MIN_HORAS))
   st.caption(
@@ -716,9 +717,9 @@ with tab_rol:
     except TypeError:  # Streamlit sin row_height
       st.dataframe(vista, use_container_width=True, height=_h)
     st.caption(
-        "T1 23-07 · T2 07-15 · T3 15-23 · OI oficina · D descanso · "
-        "V/CP/PER/LM ausencias. Cabecera con * = feriado. "
-        "El prefijo del código es el rol (C/ET/EF/A)."
+        "T1 23-07 (nocturno, empieza la víspera) · T2 07-15 · T3 15-23 · "
+        "OI oficina · D descanso · V/CP/PER/LM ausencias. Cabecera con * = "
+        "feriado. El prefijo del código es el rol (C/ET/EF/A)."
     )
     st.download_button(
         "⬇️ Descargar CSV", grid.to_csv().encode("utf-8-sig"),

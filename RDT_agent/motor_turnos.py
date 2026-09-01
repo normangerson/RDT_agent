@@ -6,7 +6,8 @@ RDTLightning). Aquí vive todo lo que **da criterios** a la construcción del ro
   * Régimen rotativo de 5 semanas (editable) anclado por operador
     (fecha base = un lunes + semana del ciclo en esa fecha).
   * Reglas de secuencia (fijas): 1 turno por día y descanso mínimo de 8 h
-    entre turnos -> única transición prohibida al día siguiente: T1 -> T2.
+    entre turnos. T1 es nocturno rotulado por el día en que termina (23:00 de
+    la víspera -> 07:00). Única transición prohibida: T3 -> T1 al día siguiente.
   * Semana de descanso "intocable" (Lun-Dom).
   * Ausencias (vacaciones / capacitación / permiso / licencia médica).
   * Forzados (OI permanente de lunes a viernes, o un código fijo en un rango
@@ -85,17 +86,21 @@ TIPO_AUS = {
 }
 SEM_NOMBRE = {1: "OI (oficina)", 2: "Turno 2", 3: "Turno 3", 4: "Turno 1", 5: "Descanso"}
 
-# horario de turnos (para el descanso mínimo); la hora fin puede pasar de 24
+# Horario de cada turno en horas del DÍA QUE ROTULA la celda.
+# T1 es nocturno y se rotula por el día en que TERMINA: T1 del día N va de las
+# 23:00 del día N-1 (hora -1) a las 07:00 del día N. Dentro de un día el orden
+# es T1 (madrugada) -> T2 -> T3.
 TURNO_H = {
-    "T1": {"ini": 23, "fin": 31},
+    "T1": {"ini": -1, "fin": 7},
     "T2": {"ini": 7, "fin": 15},
     "T3": {"ini": 15, "fin": 23},
 }
 TURNO_NUM = {"T1": "1", "T2": "2", "T3": "3"}
 
 # Reglas de secuencia (fijas): 1 turno por día y descanso mínimo entre turnos
-# de 8 horas (= la duración de un turno). Con 8 h, la única transición que
-# queda prohibida al día siguiente es T1 -> T2 (0 h de descanso).
+# de 8 horas (= la duración de un turno). Con este horario, la única transición
+# que queda prohibida es T3 -> T1 al día siguiente: T3 termina 23:00 y el T1
+# del día siguiente arranca esa misma hora (0 h de descanso).
 DESCANSO_MIN_HORAS = 8
 
 DIA_TIPO = [
