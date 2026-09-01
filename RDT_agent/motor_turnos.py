@@ -187,10 +187,12 @@ def config_default() -> dict:
             "nSem": 5,
             "bloqueDow": 1,  # cada semana del ciclo inicia el lunes
             "patron": patron_default(),
+            # Reglas fijas: 1 turno por día y descanso mínimo suficiente para
+            # dejar un turno libre entre turnos (de ahí salen las transiciones
+            # prohibidas al día siguiente: T1->T2, T1->T3, T3->T2).
             "reglas": {
                 "unoPorDia": True,
                 "minDescansoHoras": 12,
-                "maxNocturnosSeguidos": 3,
             },
         },
         "feriados": [],          # [{fecha, nombre}]
@@ -424,7 +426,6 @@ def generar_rol(
     patron = reg["patron"]
     reglas = reg.get("reglas", {})
     min_h = int(reglas.get("minDescansoHoras", 12))
-    max_noct = int(reglas.get("maxNocturnosSeguidos", 0) or 0)
 
     cob = config["cobertura"]
     ui = config.get("ui", {})
@@ -723,19 +724,8 @@ def generar_rol(
 
     # 4) validación de secuencia y semana de descanso -------------------------
     for p in pers:
-        seguidas_t1 = 0
         for f in all_fechas:
             t = turno_de(p["id"], f)
-            if t == "T1":
-                seguidas_t1 += 1
-                if max_noct and seguidas_t1 > max_noct:
-                    errores.append({
-                        "tipo": "w", "f": f,
-                        "txt": f"{p['nombre']}: {seguidas_t1} turnos T1 seguidos "
-                               f"(máx. {max_noct})",
-                    })
-            else:
-                seguidas_t1 = 0
             if not t:
                 continue
             prev = _ymd(_add_days(_parse(f), -1))

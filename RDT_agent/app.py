@@ -11,16 +11,78 @@ import agente_turnos as ag
 MODEL = "gemini-3.6-flash"
 
 st.set_page_config(
-    page_title="Agente de Turnos - Centro de Control",
+    page_title="Rol de Turnos - Centro de Control",
     page_icon="🛡️",
     layout="wide",
 )
 
-st.title("🛡️ Agente Inteligente de Turnos - Centro de Control")
+# --- Estética inspirada en RDTLightning (paleta slate + sky) --------------- #
 st.markdown(
-    "Sistema autónomo para la planificación, optimización y gestión de turnos"
-    " operativos 24/7. El rol se construye con un **motor determinista** y el"
-    " agente lo consulta, explica y ajusta."
+    """
+    <style>
+      :root{
+        --ink:#0f172a; --text:#1e293b; --muted:#64748b;
+        --bg:#f8fafc; --line:#e2e8f0; --line2:#f1f5f9;
+        --sky:#0ea5e9; --sky-dk:#0369a1; --sky-bg:#f0f9ff;
+      }
+      html, body, [class*="css"], .stMarkdown, input, textarea, button, select{
+        font-family:"Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+      }
+      .stApp{ background:var(--bg); color:var(--text); }
+      .block-container{ padding-top:2.2rem; max-width:1400px; }
+
+      /* Encabezados con barra sky a la izquierda */
+      h1, h2, h3{ color:var(--ink); letter-spacing:-.015em; font-weight:800; }
+      [data-testid="stMarkdownContainer"] h2,
+      [data-testid="stMarkdownContainer"] h3{
+        border-bottom:2px solid var(--line); padding-bottom:.4rem; margin-top:.4rem;
+        display:flex; align-items:center; gap:.6rem;
+      }
+      [data-testid="stMarkdownContainer"] h2::before,
+      [data-testid="stMarkdownContainer"] h3::before{
+        content:""; width:5px; height:1.1em; border-radius:3px;
+        background:var(--sky); flex-shrink:0;
+      }
+      [data-testid="stMarkdownContainer"] h3{ font-size:.95rem; text-transform:none; }
+
+      /* Sidebar como panel */
+      [data-testid="stSidebar"]{ background:#fff; border-right:1px solid var(--line); }
+
+      /* Tarjetas / contenedores con borde */
+      [data-testid="stVerticalBlockBorderWrapper"]{
+        background:#fff; border-radius:11px; box-shadow:0 2px 5px rgba(15,23,42,.05);
+      }
+
+      /* Botones */
+      .stButton>button, .stDownloadButton>button, .stFormSubmitButton>button{
+        border-radius:7px; font-weight:700; border:1px solid var(--line);
+      }
+      .stButton>button[kind="primary"], .stFormSubmitButton>button[kind="primary"]{
+        background:var(--sky); border-color:var(--sky);
+      }
+      .stButton>button[kind="primary"]:hover{ background:var(--sky-dk); }
+
+      /* Inputs */
+      .stTextInput input, .stNumberInput input, .stDateInput input,
+      div[data-baseweb="select"]>div{ border-radius:7px !important; }
+
+      /* Tabs */
+      .stTabs [data-baseweb="tab-list"]{ gap:2px; border-bottom:1px solid var(--line); }
+      .stTabs [data-baseweb="tab"]{ font-weight:600; }
+      .stTabs [aria-selected="true"]{ color:var(--sky-dk); font-weight:800; }
+
+      /* Cajas de aviso más suaves */
+      [data-testid="stNotification"]{ border-radius:0 8px 8px 0; }
+      [data-testid="stDataFrame"]{ border:1px solid var(--line); border-radius:9px; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.title("🛡️ Rol de Turnos — Centro de Control")
+st.caption(
+    "Subdirección de Coordinación · el rol se construye con un **motor"
+    " determinista** y el agente lo consulta, explica y ajusta."
 )
 
 # --------------------------------------------------------------------------- #
@@ -122,18 +184,6 @@ with st.sidebar:
       client = genai.Client(api_key=api_key_input)
 
   st.markdown("---")
-  st.subheader("🛡️ Reglas de secuencia")
-  reglas = CFG["regimen"].setdefault("reglas", {})
-  reglas["minDescansoHoras"] = st.slider(
-      "Descanso mínimo entre turnos (horas)", 8, 16,
-      int(reglas.get("minDescansoHoras", 12)))
-  reglas["maxNocturnosSeguidos"] = st.number_input(
-      "Máx. turnos T1 (nocturnos) consecutivos", 1, 7,
-      int(reglas.get("maxNocturnosSeguidos", 3)))
-  proh = ", ".join(f"{a}→{b}" for a, b in mt.prohibidas(reglas["minDescansoHoras"]))
-  st.caption(f"Transiciones prohibidas: {proh or 'ninguna'}")
-
-  st.markdown("---")
   st.subheader("🗓️ Mes a planificar")
   ui = CFG.setdefault("ui", {})
   ui["mesOficial"] = st.text_input("Mes oficial (YYYY-MM)",
@@ -180,90 +230,98 @@ with st.sidebar:
 
 # ===================== OPERADORES ========================================= #
 with tab_equipo:
-  st.subheader("Gestión de personal y orden de prioridad")
+  st.subheader("Operadores del Centro de Control")
   st.markdown(
       "**Roles:** **C** Coordinador · **ET** Especialista Tensión · **EF**"
       " Especialista Frecuencia · **A** Analista.  ·  El **orden** de la lista"
       " es la jerarquía (el nº 1 manda al repartir roles)."
   )
 
-  col_tabla, col_form = st.columns([2, 1])
+  # --- Alta / edición: arriba y a todo lo ancho ---------------------------- #
+  with st.container(border=True):
+    nombres = ["➕ Nuevo operador"] + [o["Nombre"] for o in OPS]
+    sel = st.selectbox("Editar operador existente o crear uno nuevo", nombres,
+                       key="op_sel")
+    editando = None if sel.startswith("➕") else next(
+        o for o in OPS if o["Nombre"] == sel)
 
-  with col_tabla:
-    st.markdown("### Personal registrado")
-    for idx, op in enumerate(OPS):
-      c_info, c_up, c_down, c_del = st.columns([5, 0.6, 0.6, 0.6])
-      with c_info:
-        roles_str = ", ".join(op.get("Roles Habilitados", []))
-        act = "" if op.get("Activo", True) else " · _inactivo_"
-        st.markdown(
-            f"**{idx+1}. {op['Nombre']}** — `[{roles_str}]` · "
-            f"{op.get('Puesto') or 'sin puesto'} · Ciclo S{op.get('Semana Ciclo', 1)}"
-            f" · costo {op.get('Costo Turno', 50)}{act}"
-        )
-      with c_up:
-        if idx > 0 and st.button("▲", key=f"up_{idx}"):
-          OPS[idx - 1], OPS[idx] = OPS[idx], OPS[idx - 1]
-          guardar_operadores(OPS)
-          st.rerun()
-      with c_down:
-        if idx < len(OPS) - 1 and st.button("▼", key=f"down_{idx}"):
-          OPS[idx + 1], OPS[idx] = OPS[idx], OPS[idx + 1]
-          guardar_operadores(OPS)
-          st.rerun()
-      with c_del:
-        if st.button("✕", key=f"del_{idx}"):
-          OPS.pop(idx)
-          guardar_operadores(OPS)
-          st.rerun()
-
-  with col_form:
-    st.markdown("### ➕ Agregar / editar")
-    nombres = ["(nuevo)"] + [o["Nombre"] for o in OPS]
-    sel = st.selectbox("Operador", nombres)
-    editando = None if sel == "(nuevo)" else next(o for o in OPS if o["Nombre"] == sel)
-    with st.form("form_operador", clear_on_submit=(editando is None)):
-      nombre = st.text_input("Nombre", value=editando["Nombre"] if editando else "")
-      puesto = st.selectbox(
+    with st.form("form_operador", clear_on_submit=(editando is None), border=False):
+      r1 = st.columns([3, 2, 2, 1.4])
+      nombre = r1[0].text_input("Nombre", value=editando["Nombre"] if editando else "")
+      puesto = r1[1].selectbox(
           "Puesto principal", mt.CARGOS,
           index=mt.CARGOS.index(editando["Puesto"])
           if editando and editando.get("Puesto") in mt.CARGOS else 3)
-      semana = st.selectbox(
-          "Semana actual del ciclo", [1, 2, 3, 4, 5],
-          index=(editando.get("Semana Ciclo", 1) - 1) if editando else 0)
-      hab = editando.get("Roles Habilitados", []) if editando else ["A"]
-      c1, c2 = st.columns(2)
-      rol_c = c1.checkbox("Coordinador (C)", "C" in hab)
-      rol_et = c1.checkbox("Esp. Tensión (ET)", "ET" in hab)
-      rol_ef = c2.checkbox("Esp. Frecuencia (EF)", "EF" in hab)
-      rol_a = c2.checkbox("Analista (A)", ("A" in hab) or (editando is None))
-      costo = st.slider("Costo por turno (1-100)", 1, 100,
-                        int(editando.get("Costo Turno", 50)) if editando else 50)
-      fecha_base = st.text_input(
-          "Fecha base — un lunes (YYYY-MM-DD, opcional)",
-          value=editando.get("Fecha Base", "") if editando else "")
-      activo = st.checkbox("Activo", editando.get("Activo", True) if editando else True)
-      ok = st.form_submit_button("Guardar")
+      semana = r1[2].selectbox(
+          "Semana del ciclo", [1, 2, 3, 4, 5],
+          index=(editando.get("Semana Ciclo", 1) - 1) if editando else 0,
+          format_func=lambda s: f"S{s} · {mt.SEM_NOMBRE[s]}")
+      costo = r1[3].number_input(
+          "Costo/turno", 1, 100,
+          int(editando.get("Costo Turno", 50)) if editando else 50)
 
-      if ok and nombre:
-        roles = [r for r, v in
-                 (("C", rol_c), ("ET", rol_et), ("EF", rol_ef), ("A", rol_a)) if v]
-        rec = {
-            "Nombre": nombre,
-            "Roles Habilitados": roles or ["A"],
-            "Semana Ciclo": semana,
-            "Puesto": puesto,
-            "Costo Turno": costo,
-            "Fecha Base": fecha_base.strip(),
-            "Activo": activo,
-        }
-        if editando:
-          editando.update(rec)
-        else:
-          OPS.append(rec)
-        guardar_operadores(OPS)
-        st.success(f"{nombre} guardado.")
-        st.rerun()
+      hab = editando.get("Roles Habilitados", []) if editando else ["A"]
+      r2 = st.columns([1, 1, 1, 1, 2, 1])
+      rol_c = r2[0].checkbox("C", "C" in hab, help="Coordinador")
+      rol_et = r2[1].checkbox("ET", "ET" in hab, help="Especialista Tensión")
+      rol_ef = r2[2].checkbox("EF", "EF" in hab, help="Especialista Frecuencia")
+      rol_a = r2[3].checkbox("A", ("A" in hab) or (editando is None), help="Analista")
+      fecha_base = r2[4].text_input(
+          "Fecha base (lunes, opcional)",
+          value=editando.get("Fecha Base", "") if editando else "")
+      activo = r2[5].checkbox(
+          "Activo", editando.get("Activo", True) if editando else True)
+
+      ok = st.form_submit_button(
+          "Guardar operador" if editando else "Crear operador", type="primary")
+
+    if ok and nombre:
+      roles = [r for r, v in
+               (("C", rol_c), ("ET", rol_et), ("EF", rol_ef), ("A", rol_a)) if v]
+      rec = {
+          "Nombre": nombre,
+          "Roles Habilitados": roles or ["A"],
+          "Semana Ciclo": semana,
+          "Puesto": puesto,
+          "Costo Turno": int(costo),
+          "Fecha Base": fecha_base.strip(),
+          "Activo": activo,
+      }
+      if editando:
+        editando.update(rec)
+      else:
+        OPS.append(rec)
+      guardar_operadores(OPS)
+      st.success(f"{nombre} guardado.")
+      st.rerun()
+
+  # --- Lista ------------------------------------------------------------- #
+  st.markdown("#### Personal registrado")
+  h = st.columns([0.5, 3.5, 2, 1.6, 1.2, 1, 0.6, 0.6, 0.6])
+  for col, txt in zip(h, ["#", "Nombre", "Puesto", "Roles", "Ciclo", "Costo",
+                          "", "", ""]):
+    col.caption(txt)
+  for idx, op in enumerate(OPS):
+    c = st.columns([0.5, 3.5, 2, 1.6, 1.2, 1, 0.6, 0.6, 0.6])
+    inact = "" if op.get("Activo", True) else " 💤"
+    c[0].markdown(f"**{idx+1}**")
+    c[1].markdown(f"**{op['Nombre']}**{inact}")
+    c[2].markdown(op.get("Puesto") or "—")
+    c[3].markdown("`" + " ".join(op.get("Roles Habilitados", [])) + "`")
+    c[4].markdown(f"S{op.get('Semana Ciclo', 1)}")
+    c[5].markdown(str(op.get("Costo Turno", 50)))
+    if idx > 0 and c[6].button("▲", key=f"up_{idx}"):
+      OPS[idx - 1], OPS[idx] = OPS[idx], OPS[idx - 1]
+      guardar_operadores(OPS)
+      st.rerun()
+    if idx < len(OPS) - 1 and c[7].button("▼", key=f"down_{idx}"):
+      OPS[idx + 1], OPS[idx] = OPS[idx], OPS[idx + 1]
+      guardar_operadores(OPS)
+      st.rerun()
+    if c[8].button("✕", key=f"del_{idx}"):
+      OPS.pop(idx)
+      guardar_operadores(OPS)
+      st.rerun()
 
   CFG["prioridad"] = [o["Nombre"] for o in OPS]
   guardar_config(CFG)
@@ -275,6 +333,10 @@ with tab_regimen:
       "Patrón estándar de rotación. El motor lo rota para cada operador según su"
       " fecha base y su semana del ciclo. Códigos: **OI** oficina · **T2**"
       " 07-15 · **T3** 15-23 · **T1** 23-07 · **D** descanso."
+  )
+  st.caption(
+      "Reglas de secuencia (fijas): 1 turno por día y descanso mínimo entre"
+      " turnos → no se encadena T1→T2, T1→T3 ni T3→T2 al día siguiente."
   )
   patron = CFG["regimen"]["patron"]
   dias = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]

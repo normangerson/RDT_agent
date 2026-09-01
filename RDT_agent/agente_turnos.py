@@ -340,22 +340,6 @@ def mover_prioridad(operador: str, direccion: str) -> dict:
     return {"ok": True, "orden": CTX.config["prioridad"]}
 
 
-def fijar_regla_secuencia(descanso_minimo_horas: int = 0,
-                          max_t1_consecutivos: int = 0) -> dict:
-    """Ajusta las reglas de secuencia. Pasa 0 en un parámetro para no tocarlo.
-    `descanso_minimo_horas` define qué transiciones de turno quedan prohibidas
-    al día siguiente; `max_t1_consecutivos` marca advertencia si se supera."""
-    reglas = CTX.config["regimen"].setdefault("reglas", {})
-    if descanso_minimo_horas:
-        reglas["minDescansoHoras"] = int(descanso_minimo_horas)
-    if max_t1_consecutivos:
-        reglas["maxNocturnosSeguidos"] = int(max_t1_consecutivos)
-    return {"ok": True, "reglas": reglas,
-            "transiciones_prohibidas": [
-                f"{a}->{b}" for a, b in mt.prohibidas(reglas.get("minDescansoHoras", 12))
-            ]}
-
-
 # --------------------------------------------------------------------------- #
 #  Registro de tools + system instruction                                      #
 # --------------------------------------------------------------------------- #
@@ -374,7 +358,6 @@ TOOLS = [
     quitar_forzados,
     fijar_cobertura,
     mover_prioridad,
-    fijar_regla_secuencia,
 ]
 
 
@@ -396,8 +379,8 @@ CRITERIOS QUE APLICA EL MOTOR (ya implementados, no los recalcules tú):
 - Régimen rotativo de 5 semanas, anclado por operador (fecha base = un lunes +
   semana del ciclo). Códigos: OI oficina · T1 23-07 · T2 07-15 · T3 15-23 · D.
 - La semana de descanso (Lun-Dom) es intocable: el motor nunca la usa.
-- Reglas de secuencia: descanso mínimo entre turnos -> transiciones prohibidas;
-  máximo de turnos T1 consecutivos.
+- Reglas de secuencia fijas: 1 turno por día y descanso mínimo entre turnos, lo
+  que prohíbe encadenar T1->T2, T1->T3 y T3->T2 al día siguiente.
 - Ausencias (VAC/CAP/PER/MED) y feriados.
 - Forzados: OI permanente (Lun-Vie) o día puntual.
 - Prioridad entre operadores: el nº 1 de la lista manda al repartir roles.

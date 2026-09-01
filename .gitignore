@@ -3,3 +3,4 @@ __pycache__/
 operadores.json
 config_rol.json
 .streamlit/secrets.toml
+.claude/
