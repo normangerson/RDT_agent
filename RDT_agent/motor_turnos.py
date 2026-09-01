@@ -975,8 +975,13 @@ def diagnostico_slot(rol: dict, config: dict, fecha: str, turno: str,
         elif cell.get("forzado"):
             motivo = f"forzado a {cell['cod']}"
         elif pc["tipo"] == "T" and pc.get("turno") == turno:
-            motivo = (f"está en {turno} cubriendo {cubierto_por} "
-                      f"(excedente de {puesto} → demotado)")
+            if (JERARQUIA.index(cubierto_por) < JERARQUIA.index(puesto)
+                    and not cell.get("lateral") and not cell.get("reasignado")):
+                motivo = (f"está en {turno} pero cubre {cubierto_por}, un rol de "
+                          f"mayor jerarquía que {puesto} (sólo puede cubrir uno)")
+            else:
+                motivo = (f"está en {turno} cubriendo {cubierto_por} "
+                          f"(se le movió de {puesto})")
         elif reg_turno == turno and cell.get("spillOI"):
             motivo = (f"el régimen lo puso en {turno} pero el puesto {puesto} "
                       "ya estaba cubierto por alguien de mayor jerarquía → pasó a OI")
