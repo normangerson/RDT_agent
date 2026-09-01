@@ -251,24 +251,23 @@ def feriados_peru_2026() -> list[dict]:
 def operadores_ejemplo() -> list[dict]:
     """Plantilla de ejemplo de RDT_agent, con los campos nuevos ya poblados."""
     base = [
-        ("Carlos Pérez", ["C", "ET", "EF", "A"], 1, "Coordinador"),
-        ("Ana Gómez", ["ET", "EF", "A"], 2, "Especialista"),
-        ("Luis Torres", ["EF", "A"], 3, "Especialista Jr"),
-        ("María Ruiz", ["A"], 4, "Analista"),
-        ("Jorge Díaz", ["C", "ET"], 5, "Coordinador"),
-        ("Sofía Castro", ["EF", "ET", "A"], 1, "Especialista"),
+        ("Carlos Pérez", ["C", "ET", "EF", "A"], 1),
+        ("Ana Gómez", ["ET", "EF", "A"], 2),
+        ("Luis Torres", ["EF", "A"], 3),
+        ("María Ruiz", ["A"], 4),
+        ("Jorge Díaz", ["C", "ET"], 5),
+        ("Sofía Castro", ["ET", "EF", "A"], 1),
     ]
     return [
         {
             "Nombre": n,
             "Roles Habilitados": roles,
             "Semana Ciclo": sem,
-            "Puesto": puesto,
             "Costo Turno": 50,
             "Fecha Base": "",
             "Activo": True,
         }
-        for n, roles, sem, puesto in base
+        for n, roles, sem in base
     ]
 
 
@@ -334,6 +333,11 @@ def rol_base(p: dict) -> str:
 
 def familia(rol: str) -> str:
     return FAMILIA.get(rol, rol)
+
+
+def rol_principal(op: dict) -> str:
+    """Rol base 'de cara' de un operador crudo (para mostrar en el UI)."""
+    return rol_base(_norm_operador(op, "2020-01-06"))
 
 
 # --------------------------------------------------------------------------- #

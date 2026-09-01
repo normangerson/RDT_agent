@@ -76,13 +76,13 @@ def _nuevo_id(prefijo: str) -> str:
 # --------------------------------------------------------------------------- #
 
 def consultar_operadores() -> list[dict]:
-    """Lista los operadores registrados con su puesto, roles habilitados,
-    semana del ciclo, costo por turno y si están activos. El orden de la lista
-    es el orden de prioridad/jerarquía."""
+    """Lista los operadores registrados con su rol base, roles habilitados,
+    semana del ciclo, fecha base, costo por turno y si están activos. El orden
+    de la lista es el orden de prioridad/jerarquía."""
     return [
         {
             "nombre": o.get("Nombre"),
-            "puesto": o.get("Puesto", "(sin definir)"),
+            "rol_base": mt.rol_principal(o),
             "roles_habilitados": o.get("Roles Habilitados", []),
             "semana_ciclo": o.get("Semana Ciclo", 1),
             "fecha_base": o.get("Fecha Base") or "(lunes de referencia)",

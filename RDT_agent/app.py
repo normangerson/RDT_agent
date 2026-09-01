@@ -17,64 +17,117 @@ st.set_page_config(
     layout="wide",
 )
 
-# --- Estética inspirada en RDTLightning (paleta slate + sky) --------------- #
+# --- Estética portada de RDTLightning (paleta slate + sky) ---------------- #
 st.markdown(
     """
     <style>
       :root{
-        --ink:#0f172a; --text:#1e293b; --muted:#64748b;
+        --ink:#0f172a; --text:#1e293b; --muted:#64748b; --muted2:#475569;
         --bg:#f8fafc; --line:#e2e8f0; --line2:#f1f5f9;
         --sky:#0ea5e9; --sky-dk:#0369a1; --sky-bg:#f0f9ff;
+        --ok:#059669; --warn:#b45309; --err:#dc2626;
       }
-      html, body, [class*="css"], .stMarkdown, input, textarea, button, select{
+      html, body, .stApp, [class*="css"], .stMarkdown,
+      input, textarea, button, select, [data-baseweb]{
         font-family:"Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
       }
       .stApp{ background:var(--bg); color:var(--text); }
-      .block-container{ padding-top:2.2rem; max-width:1400px; }
+      .stApp, .stMarkdown p, .stMarkdown li{ font-size:13px; line-height:1.55; }
+      .block-container{ padding-top:2rem; padding-bottom:3rem; max-width:1440px; }
 
-      /* Encabezados con barra sky a la izquierda */
-      h1, h2, h3{ color:var(--ink); letter-spacing:-.015em; font-weight:800; }
+      /* Título principal compacto, tipo "header" del HTML */
+      h1{ font-size:1.5rem !important; font-weight:800; color:var(--ink);
+          letter-spacing:-.02em; }
+      [data-testid="stHeaderActionElements"]{ display:none; }
+
+      /* h2/h3 con barra sky a la izquierda y subrayado */
+      h2, h3{ color:var(--ink); font-weight:800; letter-spacing:-.015em; }
       [data-testid="stMarkdownContainer"] h2,
       [data-testid="stMarkdownContainer"] h3{
-        border-bottom:2px solid var(--line); padding-bottom:.4rem; margin-top:.4rem;
-        display:flex; align-items:center; gap:.6rem;
+        border-bottom:2px solid var(--line); padding-bottom:.4rem;
+        margin:.6rem 0 .5rem; display:flex; align-items:center; gap:.6rem;
       }
       [data-testid="stMarkdownContainer"] h2::before,
       [data-testid="stMarkdownContainer"] h3::before{
-        content:""; width:5px; height:1.1em; border-radius:3px;
+        content:""; width:5px; height:1.05em; border-radius:3px;
         background:var(--sky); flex-shrink:0;
       }
-      [data-testid="stMarkdownContainer"] h3{ font-size:.95rem; text-transform:none; }
+      [data-testid="stMarkdownContainer"] h2{ font-size:1.05rem; }
+      [data-testid="stMarkdownContainer"] h3, [data-testid="stMarkdownContainer"] h4{
+        font-size:.82rem; text-transform:uppercase; letter-spacing:.06em;
+        color:var(--muted); font-weight:800;
+      }
+      [data-testid="stMarkdownContainer"] h4{ border:0; padding:0; }
 
-      /* Sidebar como panel */
+      /* Sidebar como panel blanco */
       [data-testid="stSidebar"]{ background:#fff; border-right:1px solid var(--line); }
+      [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3{ font-size:.8rem; }
 
-      /* Tarjetas / contenedores con borde */
+      /* Tarjetas con borde -> panel del HTML */
       [data-testid="stVerticalBlockBorderWrapper"]{
-        background:#fff; border-radius:11px; box-shadow:0 2px 5px rgba(15,23,42,.05);
+        background:#fff; border-radius:11px;
+        box-shadow:0 2px 5px rgba(15,23,42,.05);
+      }
+      [data-testid="stExpander"]{ border-radius:11px; border:1px solid var(--line); }
+
+      /* Labels tipo HTML: mayúsculas pequeñas */
+      [data-testid="stWidgetLabel"] p{
+        font-size:.7rem !important; font-weight:700; text-transform:uppercase;
+        letter-spacing:.06em; color:var(--muted);
       }
 
       /* Botones */
       .stButton>button, .stDownloadButton>button, .stFormSubmitButton>button{
         border-radius:7px; font-weight:700; border:1px solid var(--line);
+        transition:background .12s, border-color .12s;
       }
+      .stButton>button:hover{ border-color:var(--sky); color:var(--sky-dk); }
       .stButton>button[kind="primary"], .stFormSubmitButton>button[kind="primary"]{
-        background:var(--sky); border-color:var(--sky);
+        background:var(--sky); border-color:var(--sky); color:#fff;
       }
-      .stButton>button[kind="primary"]:hover{ background:var(--sky-dk); }
+      .stButton>button[kind="primary"]:hover,
+      .stFormSubmitButton>button[kind="primary"]:hover{
+        background:var(--sky-dk); border-color:var(--sky-dk); color:#fff;
+      }
 
       /* Inputs */
       .stTextInput input, .stNumberInput input, .stDateInput input,
-      div[data-baseweb="select"]>div{ border-radius:7px !important; }
+      .stTextArea textarea, div[data-baseweb="select"]>div{
+        border-radius:7px !important; border-color:var(--line) !important;
+      }
+      .stTextInput input:focus, .stNumberInput input:focus,
+      .stDateInput input:focus{ box-shadow:0 0 0 3px rgba(14,165,233,.12); }
 
-      /* Tabs */
+      /* Tabs -> nav del HTML */
       .stTabs [data-baseweb="tab-list"]{ gap:2px; border-bottom:1px solid var(--line); }
-      .stTabs [data-baseweb="tab"]{ font-weight:600; }
-      .stTabs [aria-selected="true"]{ color:var(--sky-dk); font-weight:800; }
+      .stTabs [data-baseweb="tab"]{ font-weight:600; color:var(--muted2);
+        padding:8px 12px; }
+      .stTabs [data-baseweb="tab"]:hover{ color:var(--ink); }
+      .stTabs [aria-selected="true"]{ color:var(--sky-dk) !important;
+        font-weight:800; border-bottom:2px solid var(--sky); }
 
-      /* Cajas de aviso más suaves */
-      [data-testid="stNotification"]{ border-radius:0 8px 8px 0; }
-      [data-testid="stDataFrame"]{ border:1px solid var(--line); border-radius:9px; }
+      /* Avisos: borde izquierdo de color, esquinas 0 8 8 0 (info/note del HTML) */
+      [data-testid="stAlert"]{ border-radius:0 8px 8px 0 !important;
+        border-left:4px solid var(--sky); }
+      [data-testid="stAlert"][data-baseweb] { background:var(--sky-bg); }
+
+      /* Métricas -> tarjetas KPI con filo sky */
+      [data-testid="stMetric"]{
+        background:#fff; border:1px solid var(--line); border-left:4px solid var(--sky);
+        border-radius:9px; padding:10px 14px; box-shadow:0 2px 5px rgba(15,23,42,.05);
+      }
+      [data-testid="stMetricLabel"] p{ font-size:.66rem !important; font-weight:700;
+        text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+      [data-testid="stMetricValue"]{ font-size:1.5rem; font-weight:800;
+        color:var(--ink); letter-spacing:-.02em; }
+
+      /* DataFrames */
+      [data-testid="stDataFrame"], [data-testid="stTable"]{
+        border:1px solid var(--line); border-radius:9px; }
+
+      /* Chat */
+      [data-testid="stChatMessage"]{ background:#fff; border:1px solid var(--line);
+        border-radius:11px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -85,6 +138,28 @@ st.caption(
     "Subdirección de Coordinación · el rol se construye con un **motor"
     " determinista** y el agente lo consulta, explica y ajusta."
 )
+
+
+# --- Coloreado de la grilla como en RDTLightning ------------------------- #
+_CELL_BG = {
+    "T1": ("#64748b", "#ffffff"), "T2": ("#e0f2fe", "#075985"),
+    "T3": ("#fef3c7", "#92400e"), "OI": ("#f1f5f9", "#475569"),
+    "D": ("#ffffff", "#cbd5e1"), "V": ("#f3e8ff", "#6b21a8"),
+    "CP": ("#dcfce7", "#166534"), "PER": ("#ffedd5", "#9a3412"),
+    "LM": ("#fee2e2", "#991b1b"),
+}
+
+
+def _cell_style(v):
+  pc = mt.parse_code(str(v))
+  if pc["tipo"] == "T":
+    key = pc["turno"]
+  elif pc["tipo"] in ("OI", "D"):
+    key = pc["tipo"]
+  else:
+    key = str(v)
+  bg, fg = _CELL_BG.get(key, ("#ffffff", "#1e293b"))
+  return f"background-color:{bg};color:{fg};font-weight:700;text-align:center"
 
 # --------------------------------------------------------------------------- #
 #  Persistencia                                                                #
@@ -134,7 +209,6 @@ def cargar_operadores():
   if not ops:
     return mt.operadores_ejemplo()
   for o in ops:  # completar campos nuevos en registros antiguos
-    o.setdefault("Puesto", "")
     o.setdefault("Costo Turno", 50)
     o.setdefault("Fecha Base", "")
     o.setdefault("Activo", True)
@@ -260,33 +334,33 @@ with tab_equipo:
         _fb_prev = datetime.date.fromisoformat(_snap)
 
     with st.form("form_operador", clear_on_submit=(editando is None), border=False):
-      r1 = st.columns([3, 2, 2, 1.4])
+      r1 = st.columns([3.4, 1.2, 1])
       nombre = r1[0].text_input("Nombre", value=editando["Nombre"] if editando else "")
-      puesto = r1[1].selectbox(
-          "Puesto principal", mt.CARGOS,
-          index=mt.CARGOS.index(editando["Puesto"])
-          if editando and editando.get("Puesto") in mt.CARGOS else 3)
-      semana = r1[2].selectbox(
+      costo = r1[1].number_input(
+          "Costo/turno", 1, 100,
+          int(editando.get("Costo Turno", 50)) if editando else 50)
+      activo = r1[2].checkbox(
+          "Activo", editando.get("Activo", True) if editando else True)
+
+      hab = editando.get("Roles Habilitados", []) if editando else ["A"]
+      st.caption("ROLES QUE PUEDE CUBRIR")
+      rc = st.columns(4)
+      rol_c = rc[0].checkbox("C — Coordinador", "C" in hab)
+      rol_et = rc[1].checkbox("ET — Esp. Tensión", "ET" in hab)
+      rol_ef = rc[2].checkbox("EF — Esp. Frecuencia", "EF" in hab)
+      rol_a = rc[3].checkbox("A — Analista", ("A" in hab) or (editando is None))
+
+      st.caption("ANCLAJE DEL CICLO")
+      ra = st.columns([1, 1])
+      semana = ra[0].selectbox(
           "Semana del ciclo en la fecha base", [1, 2, 3, 4, 5],
           index=(int(editando.get("Semana Ciclo", 1)) - 1) if editando else 0,
           format_func=lambda s: f"S{s} · {mt.SEM_NOMBRE[s]}")
-      costo = r1[3].number_input(
-          "Costo/turno", 1, 100,
-          int(editando.get("Costo Turno", 50)) if editando else 50)
-
-      hab = editando.get("Roles Habilitados", []) if editando else ["A"]
-      r2 = st.columns([0.9, 0.9, 0.9, 0.9, 2.4, 1])
-      rol_c = r2[0].checkbox("C", "C" in hab, help="Coordinador")
-      rol_et = r2[1].checkbox("ET", "ET" in hab, help="Especialista Tensión")
-      rol_ef = r2[2].checkbox("EF", "EF" in hab, help="Especialista Frecuencia")
-      rol_a = r2[3].checkbox("A", ("A" in hab) or (editando is None), help="Analista")
-      fecha_base = r2[4].date_input(
+      fecha_base = ra[1].date_input(
           "Fecha base (se ajusta al lunes)", value=_fb_prev,
           format="YYYY-MM-DD",
           help="Cualquier día vale: se usa el lunes de esa semana. "
                "Vacío = lunes anterior al día 1 del mes oficial.")
-      activo = r2[5].checkbox(
-          "Activo", editando.get("Activo", True) if editando else True)
 
       if fecha_base:
         _lb = mt._lunes_de(fecha_base.isoformat())
@@ -308,11 +382,12 @@ with tab_equipo:
           "Nombre": nombre,
           "Roles Habilitados": roles or ["A"],
           "Semana Ciclo": int(semana),
-          "Puesto": puesto,
           "Costo Turno": int(costo),
           "Fecha Base": fb,
           "Activo": activo,
       }
+      if editando and "Puesto" in editando:
+        del editando["Puesto"]
       if editando:
         editando.update(rec)
       else:
@@ -324,16 +399,16 @@ with tab_equipo:
 
   # --- Lista ------------------------------------------------------------- #
   st.markdown("#### Personal registrado")
-  h = st.columns([0.5, 3.5, 2, 1.6, 1.2, 1, 0.6, 0.6, 0.6])
-  for col, txt in zip(h, ["#", "Nombre", "Puesto", "Roles", "Ciclo", "Costo",
+  h = st.columns([0.5, 3.3, 2.2, 1.6, 1, 1, 0.6, 0.6, 0.6])
+  for col, txt in zip(h, ["#", "Nombre", "Rol base", "Roles", "Ciclo", "Costo",
                           "", "", ""]):
     col.caption(txt)
   for idx, op in enumerate(OPS):
-    c = st.columns([0.5, 3.5, 2, 1.6, 1.2, 1, 0.6, 0.6, 0.6])
+    c = st.columns([0.5, 3.3, 2.2, 1.6, 1, 1, 0.6, 0.6, 0.6])
     inact = "" if op.get("Activo", True) else " 💤"
     c[0].markdown(f"**{idx+1}**")
     c[1].markdown(f"**{op['Nombre']}**{inact}")
-    c[2].markdown(op.get("Puesto") or "—")
+    c[2].markdown(mt.rol_principal(op))
     c[3].markdown("`" + " ".join(op.get("Roles Habilitados", [])) + "`")
     c[4].markdown(f"S{op.get('Semana Ciclo', 1)}")
     c[5].markdown(str(op.get("Costo Turno", 50)))
@@ -578,8 +653,16 @@ with tab_rol:
     data = {fila["nombre"]: [fila["celdas"][f] for f in g["fechas"]]
             for fila in g["filas"]}
     grid = pd.DataFrame(data, index=cols).T
-    st.dataframe(grid, use_container_width=True)
-    st.caption("Cabecera con * = feriado. Prefijo del código = rol (C/ET/EF/A).")
+    try:
+      vista = grid.style.map(_cell_style)
+    except AttributeError:  # pandas < 2.1
+      vista = grid.style.applymap(_cell_style)
+    st.dataframe(vista, use_container_width=True, height=min(60 + 35 * len(grid), 720))
+    st.caption(
+        "T1 23-07 · T2 07-15 · T3 15-23 · OI oficina · D descanso · "
+        "V/CP/PER/LM ausencias. Cabecera con * = feriado. "
+        "El prefijo del código es el rol (C/ET/EF/A)."
+    )
     st.download_button(
         "⬇️ Descargar CSV", grid.to_csv().encode("utf-8-sig"),
         file_name=f"rol_{ym}.csv", mime="text/csv")
