@@ -51,7 +51,14 @@
     "bloqPend": true
   },
   "forzados": [],
-  "prioridad": [],
+  "prioridad": [
+    "Carlos Pérez",
+    "Ana Gómez",
+    "Luis Torres",
+    "María Ruiz",
+    "Jorge Díaz",
+    "Sofía Castro"
+  ],
   "cobertura": {
     "LV": {
       "T1": {
