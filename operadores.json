@@ -126,5 +126,16 @@
     "Costo Turno": 11,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Christian Barturen",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 2,
+    "Costo Turno": 10,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
