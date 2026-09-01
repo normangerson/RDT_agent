@@ -92,5 +92,16 @@
     "Costo Turno": 13,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Rodolfo Ferro",
+    "Roles Habilitados": [
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 5,
+    "Costo Turno": 14,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
