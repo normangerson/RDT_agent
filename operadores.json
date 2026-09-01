@@ -12,18 +12,6 @@
     "Activo": true
   },
   {
-    "Nombre": "Angel Ticona",
-    "Roles Habilitados": [
-      "C",
-      "ET",
-      "EF"
-    ],
-    "Semana Ciclo": 5,
-    "Costo Turno": 16,
-    "Fecha Base": "2026-08-31",
-    "Activo": true
-  },
-  {
     "Nombre": "Nestor Uscamayta",
     "Roles Habilitados": [
       "C",
@@ -31,6 +19,18 @@
       "EF"
     ],
     "Semana Ciclo": 3,
+    "Costo Turno": 16,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
+  },
+  {
+    "Nombre": "Angel Ticona",
+    "Roles Habilitados": [
+      "C",
+      "ET",
+      "EF"
+    ],
+    "Semana Ciclo": 5,
     "Costo Turno": 16,
     "Fecha Base": "2026-08-31",
     "Activo": true
