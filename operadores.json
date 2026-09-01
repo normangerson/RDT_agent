@@ -147,5 +147,16 @@
     "Costo Turno": 10,
     "Fecha Base": "2026-08-31",
     "Activo": true
+  },
+  {
+    "Nombre": "Leonardo Coronel",
+    "Roles Habilitados": [
+      "EF",
+      "A"
+    ],
+    "Semana Ciclo": 5,
+    "Costo Turno": 9,
+    "Fecha Base": "2026-08-31",
+    "Activo": true
   }
 ]
