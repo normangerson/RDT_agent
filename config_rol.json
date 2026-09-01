@@ -77,7 +77,7 @@
       "T1": {
         "Coordinador": 1,
         "Especialista Tensión": 1,
-        "Especialista Frecuencia": 1,
+        "Especialista Frecuencia": 0,
         "Analista": 1
       },
       "T2": {
