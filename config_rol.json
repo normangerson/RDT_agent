@@ -41,7 +41,7 @@
     ],
     "reglas": {
       "unoPorDia": true,
-      "minDescansoHoras": 12,
+      "minDescansoHoras": 10,
       "maxNocturnosSeguidos": 3
     }
   },
