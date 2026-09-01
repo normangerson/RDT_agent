@@ -26,8 +26,9 @@ st.markdown(
 # --------------------------------------------------------------------------- #
 #  Persistencia                                                                #
 # --------------------------------------------------------------------------- #
-DB_FILE = "operadores.json"
-CFG_FILE = "config_rol.json"
+_HERE = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(_HERE, "operadores.json")
+CFG_FILE = os.path.join(_HERE, "config_rol.json")
 
 
 def cargar_operadores():
