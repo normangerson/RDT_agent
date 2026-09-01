@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+operadores.json
+config_rol.json
+.streamlit/secrets.toml
