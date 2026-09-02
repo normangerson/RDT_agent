@@ -119,6 +119,14 @@
       "desde": "2026-09-07",
       "hasta": "2026-09-10",
       "cod": "CP"
+    },
+    {
+      "id": "f5",
+      "tipo": "DIA",
+      "personaId": "Adrian Tacilla",
+      "desde": "2026-09-07",
+      "hasta": "2026-09-10",
+      "cod": "CP"
     }
   ],
   "prioridad": [
