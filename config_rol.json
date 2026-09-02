@@ -143,6 +143,14 @@
       "desde": "2026-09-14",
       "hasta": "2026-09-17",
       "cod": "CP"
+    },
+    {
+      "id": "f8",
+      "tipo": "DIA",
+      "personaId": "Nestor Uscamayta",
+      "desde": "2026-09-21",
+      "hasta": "2026-09-24",
+      "cod": "CP"
     }
   ],
   "prioridad": [
