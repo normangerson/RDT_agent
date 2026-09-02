@@ -111,6 +111,14 @@
       "id": "f3",
       "tipo": "OI_PRIO",
       "personaId": "Juan Puicon"
+    },
+    {
+      "id": "f4",
+      "tipo": "DIA",
+      "personaId": "Renzo Chavez",
+      "desde": "2026-09-07",
+      "hasta": "2026-09-10",
+      "cod": "CP"
     }
   ],
   "prioridad": [
