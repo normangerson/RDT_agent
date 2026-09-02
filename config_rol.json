@@ -151,6 +151,14 @@
       "desde": "2026-09-21",
       "hasta": "2026-09-24",
       "cod": "CP"
+    },
+    {
+      "id": "f9",
+      "tipo": "DIA",
+      "personaId": "Norman Rodriguez",
+      "desde": "2026-09-21",
+      "hasta": "2026-09-24",
+      "cod": "CP"
     }
   ],
   "prioridad": [
