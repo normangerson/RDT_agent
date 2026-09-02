@@ -127,6 +127,14 @@
       "desde": "2026-09-07",
       "hasta": "2026-09-10",
       "cod": "CP"
+    },
+    {
+      "id": "f6",
+      "tipo": "DIA",
+      "personaId": "Oscar Quispe",
+      "desde": "2026-09-14",
+      "hasta": "2026-09-17",
+      "cod": "CP"
     }
   ],
   "prioridad": [
